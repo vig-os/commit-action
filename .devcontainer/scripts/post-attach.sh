@@ -19,4 +19,8 @@ fi
 "$SCRIPT_DIR/setup-git-conf.sh"
 "$SCRIPT_DIR/init-precommit.sh"
 
+# Install Node.js dependencies
+echo -e "Installing Node.js dependencies..."
+npm install
+
 echo "Post-attach setup complete"

@@ -1,0 +1,9 @@
+name: "Commit via GitHub API"
+description: "Create signed commits via GitHub API (ruleset-friendly)"
+author: "Sync Issues Bot"
+runs:
+  using: "node20"
+  main: "dist/index.js"
+branding:
+  color: "blue"
+  icon: "git-commit"
