@@ -19,7 +19,7 @@ A modular GitHub Action that commits changes via GitHub API, creating automatica
 
 ```yaml
 - name: Commit and push changes via API
-  uses: vig-os/commit-action@v0.1.0
+  uses: vig-os/commit-action@v0.1.1
   env:
     GITHUB_TOKEN: ${{ steps.sync.outputs.app-token || steps.sync.outputs.github-token }}
     GITHUB_REPOSITORY: ${{ github.repository }}
