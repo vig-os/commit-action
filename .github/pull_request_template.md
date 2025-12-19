@@ -32,10 +32,7 @@ Closes #
 
 <!-- Describe the tests you ran and how to verify your changes -->
 
-- [ ] Tests pass locally (`make test`)
-- [ ] Image tests pass (`make test-image`)
-- [ ] Integration tests pass (`make test-integration`)
-- [ ] Registry tests pass (`make test-registry`) (if applicable)
+- [ ] Tests pass locally (`npm test`)
 - [ ] Manual testing performed (describe below)
 
 ### Manual Testing Details

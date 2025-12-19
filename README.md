@@ -2,13 +2,16 @@
 
 A modular GitHub Action that commits changes via GitHub API, creating automatically signed commits that can bypass repository rulesets.
 
+- **Repository:** [vig-os/commit-action](https://github.com/vig-os/commit-action)
+- **Organization:** [vigOS](https://github.com/vig-os)
+
 ## Features
 
-- ✅ **Automatically signed commits** - Commits created via GitHub API are signed by GitHub
-- ✅ **Bypasses rulesets** - Uses GitHub API instead of git push, allowing to bypass branch protection rules
-- ✅ **Modular design** - Can be used as a standalone action or imported as a module
-- ✅ **Type-safe** - Written in TypeScript with full type safety
-- ✅ **Well tested** - Comprehensive unit test coverage
+- **Automatically signed commits** - Commits created via GitHub API are signed by GitHub
+- **Bypasses rulesets** - Uses GitHub API instead of git push, allowing to bypass branch protection rules
+- **Modular design** - Can be used as a standalone action or imported as a module
+- **Type-safe** - Written in TypeScript with full type safety
+- **Well tested** - Comprehensive unit test coverage
 
 ## Usage
 
@@ -16,7 +19,7 @@ A modular GitHub Action that commits changes via GitHub API, creating automatica
 
 ```yaml
 - name: Commit and push changes via API
-  uses: ./actions/commit
+  uses: vig-os/commit-action@v0.1.0
   env:
     GITHUB_TOKEN: ${{ steps.sync.outputs.app-token || steps.sync.outputs.github-token }}
     GITHUB_REPOSITORY: ${{ github.repository }}
