@@ -1,6 +1,6 @@
 {
   "name": "commit-action",
-  "version": "1.0.0",
+  "version": "0.1.1",
   "description": "Commit changes via GitHub API (signed commits, bypasses rulesets)",
   "main": "dist/commit.js",
   "scripts": {
