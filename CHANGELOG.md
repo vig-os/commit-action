@@ -11,7 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Updated pull request template testing instructions to use `npm test` instead of Makefile commands
+- Updated README with repository and organization links for better visibility
+
 ### Removed
+
+- Removed outdated test options from pull request template (image tests, integration tests, registry tests)
 
 ### Fixed
 
@@ -38,4 +43,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Base64 encoding for file content
 - Bundled distribution with ncc for GitHub Actions
 
-[0.1.0]: https://github.com/vig-os/commit-action/releases/tag/v0.1.0
+[v0.1.0]: https://github.com/vig-os/commit-action/releases/tag/v0.1.0
