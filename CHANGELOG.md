@@ -9,13 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added `TARGET_BRANCH` environment variable support to avoid conflicts with GitHub's built-in `GITHUB_REF`
+- Added `normalizeBranch()` and `resolveBranch()` exported functions for branch resolution logic
+- Added comprehensive test suite for branch normalization and resolution (`commit-runner.test.ts`)
+
 ### Changed
 
-### Removed
+- Improved branch resolution logic with explicit priority: `TARGET_BRANCH` > `GITHUB_REF` (if different from context) > workflow context
+- Refactored branch resolution into testable exported functions
 
 ### Fixed
 
+- Fixed Jest test failures by adding manual mock for `@actions/github` ESM module
+- Fixed npm audit vulnerabilities by adding package overrides for `@actions/http-client@3.0.2` and `undici@6.23.0`
+
 ### Security
+
+- Fixed moderate severity vulnerability in `undici` package (<6.23.0) by forcing upgrade via npm overrides
 
 ## [v0.1.1] - 2025-12-19
 

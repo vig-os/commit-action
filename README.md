@@ -23,7 +23,8 @@ A modular GitHub Action that commits changes via GitHub API, creating automatica
   env:
     GITHUB_TOKEN: ${{ steps.sync.outputs.app-token || steps.sync.outputs.github-token }}
     GITHUB_REPOSITORY: ${{ github.repository }}
-    GITHUB_REF: refs/heads/dev
+    TARGET_BRANCH: refs/heads/main  # Preferred: avoids conflicts with built-in GITHUB_REF
+    # OR use GITHUB_REF: refs/heads/main (may be overridden by workflow context)
     COMMIT_MESSAGE: "chore: sync issues and PRs"
     FILE_PATHS: ${{ steps.sync.outputs.modified-files || 'docs' }}
 ```
@@ -37,10 +38,13 @@ npm run commit
 **Environment variables:**
 - `GITHUB_TOKEN` or `GH_TOKEN` - GitHub token (app token or regular token)
 - `GITHUB_REPOSITORY` - Repository in format "owner/repo" (defaults to context)
-- `GITHUB_REF` - Branch reference (e.g., "refs/heads/dev", defaults to context)
+- `TARGET_BRANCH` - **Preferred**: Branch reference (e.g., "refs/heads/main" or just "main", defaults to workflow context)
+- `GITHUB_REF` - Alternative branch reference (may conflict with GitHub's built-in variable if workflow runs on different branch)
 - `COMMIT_MESSAGE` - Commit message (defaults to "chore: update files")
 - `FILE_PATHS` - Comma-separated list of file paths or directories (or auto-detects from git status)
 - `BASE_SHA` - Optional base commit SHA (defaults to branch HEAD)
+
+**Note:** Use `TARGET_BRANCH` instead of `GITHUB_REF` to avoid conflicts when your workflow runs on a different branch than the target commit branch. GitHub Actions sets `GITHUB_REF` automatically based on the workflow trigger, which can override your explicit setting.
 
 ### As a Module
 
