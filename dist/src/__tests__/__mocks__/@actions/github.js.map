@@ -1,0 +1,1 @@
+{"version":3,"file":"github.js","sourceRoot":"","sources":["../../../../../src/__tests__/__mocks__/@actions/github.ts"],"names":[],"mappings":";;;AAAA,kCAAkC;AACrB,QAAA,UAAU,GAAG,IAAI,CAAC,EAAE,EAAE,CAAC;AACvB,QAAA,OAAO,GAAG;IACrB,IAAI,EAAE;QACJ,KAAK,EAAE,YAAY;QACnB,IAAI,EAAE,WAAW;KAClB;IACD,GAAG,EAAE,iBAAiB;CACvB,CAAC"}
