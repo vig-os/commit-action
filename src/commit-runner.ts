@@ -24,6 +24,11 @@ import { commitViaAPI } from "./commit";
  * @returns Normalized branch/tag name
  */
 export function normalizeBranch(ref: string): string {
+  if (ref.startsWith("refs/heads/")) {
+    return ref.replace("refs/heads/", "");
+  } else if (ref.startsWith("refs/")) {
+    return ref.replace(/^refs\/[^/]+\//, "");
+  }
   return ref;
 }
 
