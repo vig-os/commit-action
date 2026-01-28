@@ -1,19 +1,8 @@
 // Setup mocks before any imports
 // This file runs before tests, so we can set up the environment
 
-// Mock @actions/github
-jest.mock("@actions/github", () => {
-  return {
-    getOctokit: jest.fn(),
-    context: {
-      repo: {
-        owner: "test-owner",
-        repo: "test-repo",
-      },
-      ref: "refs/heads/main",
-    },
-  };
-});
+// Mock @actions/github - using manual mock file in __mocks__ directory
+jest.mock("@actions/github");
 
 // Mock fs
 jest.mock("fs", () => {

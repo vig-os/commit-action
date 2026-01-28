@@ -6,7 +6,7 @@
  * Environment variables:
  * - GITHUB_TOKEN: GitHub token (app token or regular token)
  * - GITHUB_REPOSITORY: Repository in format "owner/repo"
- * - GITHUB_REF: Branch reference (e.g., "refs/heads/dev")
+ * - GITHUB_REF or TARGET_BRANCH: Branch reference (e.g., "refs/heads/dev" or just "dev")
  * - COMMIT_MESSAGE: Commit message
  * - FILE_PATHS: Comma-separated list of file paths to commit (or read from git status)
  */
@@ -17,6 +17,45 @@ import { execSync } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 import { commitViaAPI } from "./commit";
+
+/**
+ * Normalizes a Git reference to a branch name
+ * @param ref - Git reference (e.g., "refs/heads/main", "refs/tags/v1.0.0", or just "main")
+ * @returns Normalized branch/tag name
+ */
+export function normalizeBranch(ref: string): string {
+  if (ref.startsWith("refs/heads/")) {
+    return ref.replace("refs/heads/", "");
+  } else if (ref.startsWith("refs/")) {
+    return ref.replace(/^refs\/[^/]+\//, "");
+  }
+  return ref;
+}
+
+/**
+ * Resolves the target branch from environment variables and context
+ * Priority: TARGET_BRANCH > GITHUB_REF (if different from context) > context.ref
+ * @param options - Branch resolution options
+ * @returns Resolved branch name
+ */
+export function resolveBranch(options: {
+  targetBranch?: string;
+  githubRef?: string;
+  contextRef: string;
+}): string {
+  const { targetBranch, githubRef, contextRef } = options;
+
+  if (targetBranch) {
+    // TARGET_BRANCH takes precedence (avoids conflicts with built-in GITHUB_REF)
+    return normalizeBranch(targetBranch);
+  } else if (githubRef && githubRef !== contextRef) {
+    // GITHUB_REF explicitly set and different from context - use it
+    return normalizeBranch(githubRef);
+  } else {
+    // Fall back to workflow context
+    return normalizeBranch(contextRef);
+  }
+}
 
 async function main(): Promise<void> {
   try {
@@ -39,12 +78,24 @@ async function main(): Promise<void> {
       );
     }
 
-    // Get branch from GITHUB_REF or context
-    let branch = process.env.GITHUB_REF;
-    if (branch && branch.startsWith("refs/heads/")) {
-      branch = branch.replace("refs/heads/", "");
-    } else if (!branch) {
-      branch = github.context.ref.replace("refs/heads/", "");
+    // Get branch from TARGET_BRANCH (preferred), GITHUB_REF, or context
+    const targetBranch = process.env.TARGET_BRANCH;
+    const explicitRef = process.env.GITHUB_REF;
+    const contextRef = github.context.ref;
+
+    const branch = resolveBranch({
+      targetBranch,
+      githubRef: explicitRef,
+      contextRef,
+    });
+
+    // Log which source was used
+    if (targetBranch) {
+      core.info(`Using TARGET_BRANCH: ${branch}`);
+    } else if (explicitRef && explicitRef !== contextRef) {
+      core.info(`Using explicit GITHUB_REF: ${branch} (was: ${explicitRef}, context: ${contextRef})`);
+    } else {
+      core.info(`Using branch from workflow context: ${branch} (GITHUB_REF was: ${explicitRef})`);
     }
 
     // Get commit message
