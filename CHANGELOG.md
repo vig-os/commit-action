@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Updated npm dependency overrides to force patched `minimatch` versions across transitive dependency trees.
 ### Deprecated
 
 ### Removed
@@ -19,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- Fixed `minimatch` ReDoS vulnerabilities (`CVE-2026-27903` / `GHSA-7r86-cg39-jmmj`) by pinning safe transitive versions via npm overrides.
 ## [v0.1.3] - 2026-01-28
 
 ### Added
