@@ -1,4 +1,20 @@
-import { normalizeBranch, resolveBranch } from "../../commit-runner";
+import * as core from "@actions/core";
+import { execSync } from "child_process";
+import * as github from "@actions/github";
+import { commitViaAPI } from "../../commit";
+import { main, normalizeBranch, resolveBranch } from "../../commit-runner";
+
+jest.mock("@actions/core", () => ({
+  info: jest.fn(),
+  setOutput: jest.fn(),
+  setFailed: jest.fn(),
+}));
+jest.mock("child_process", () => ({
+  execSync: jest.fn(),
+}));
+jest.mock("../../commit", () => ({
+  commitViaAPI: jest.fn(),
+}));
 
 describe("commit-runner", () => {
   describe("normalizeBranch", () => {
@@ -129,6 +145,95 @@ describe("commit-runner", () => {
         contextRef: defaultContextRef,
       });
       expect(result).toBe("production");
+    });
+  });
+
+  describe("main ALLOW_EMPTY behavior", () => {
+    const originalEnv = process.env;
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      process.env = {
+        ...originalEnv,
+        GITHUB_TOKEN: "test-token",
+        GITHUB_REPOSITORY: "owner/repo",
+        TARGET_BRANCH: "refs/heads/main",
+        COMMIT_MESSAGE: "Test commit",
+      };
+      (github.context as any).ref = "refs/heads/main";
+      (commitViaAPI as jest.Mock).mockResolvedValue({
+        commitSha: "commit-sha",
+        treeSha: "tree-sha",
+        filesCommitted: 0,
+      });
+    });
+
+    afterAll(() => {
+      process.env = originalEnv;
+    });
+
+    it("should pass allowEmpty true to commitViaAPI when ALLOW_EMPTY=true", async () => {
+      process.env.ALLOW_EMPTY = "true";
+      process.env.FILE_PATHS = "file.txt";
+
+      const fs = require("fs");
+      fs.existsSync = jest.fn().mockReturnValue(true);
+      fs.statSync = jest.fn().mockReturnValue({ isDirectory: () => false });
+
+      await main();
+
+      expect(commitViaAPI).toHaveBeenCalledWith(
+        expect.objectContaining({
+          allowEmpty: true,
+        })
+      );
+    });
+
+    it("should not exit early when no files and ALLOW_EMPTY=true", async () => {
+      process.env.ALLOW_EMPTY = "true";
+      delete process.env.FILE_PATHS;
+      (execSync as jest.Mock).mockReturnValue("");
+
+      await main();
+
+      expect(commitViaAPI).toHaveBeenCalled();
+      expect(core.info).toHaveBeenCalledWith("Creating empty commit (ALLOW_EMPTY=true)");
+    });
+
+    it("should exit 0 when no files and ALLOW_EMPTY is unset", async () => {
+      delete process.env.ALLOW_EMPTY;
+      delete process.env.FILE_PATHS;
+      (execSync as jest.Mock).mockReturnValue("");
+
+      const exitSpy = jest
+        .spyOn(process, "exit")
+        .mockImplementation((() => {
+          throw new Error("EXIT_0");
+        }) as never);
+
+      await expect(main()).rejects.toThrow("EXIT_0");
+
+      expect(core.info).toHaveBeenCalledWith("No files to commit");
+      expect(exitSpy).toHaveBeenCalledWith(0);
+      expect(commitViaAPI).not.toHaveBeenCalled();
+      exitSpy.mockRestore();
+    });
+
+    it("should treat ALLOW_EMPTY=TRUE as true", async () => {
+      process.env.ALLOW_EMPTY = "TRUE";
+      process.env.FILE_PATHS = "file.txt";
+
+      const fs = require("fs");
+      fs.existsSync = jest.fn().mockReturnValue(true);
+      fs.statSync = jest.fn().mockReturnValue({ isDirectory: () => false });
+
+      await main();
+
+      expect(commitViaAPI).toHaveBeenCalledWith(
+        expect.objectContaining({
+          allowEmpty: true,
+        })
+      );
     });
   });
 });
