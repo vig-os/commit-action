@@ -26,4 +26,5 @@ export declare function resolveBranch(options: {
     githubRef?: string;
     contextRef: string;
 }): string;
+export declare function main(): Promise<void>;
 //# sourceMappingURL=commit-runner.d.ts.map
