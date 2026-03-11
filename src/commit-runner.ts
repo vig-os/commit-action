@@ -57,7 +57,7 @@ export function resolveBranch(options: {
   }
 }
 
-async function main(): Promise<void> {
+export async function main(): Promise<void> {
   try {
     // Get token from environment
     const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
@@ -100,6 +100,7 @@ async function main(): Promise<void> {
 
     // Get commit message
     const message = process.env.COMMIT_MESSAGE || "chore: update files";
+    const allowEmpty = (process.env.ALLOW_EMPTY || "").toLowerCase() === "true";
 
     // Get file paths from environment or detect from git status
     let filePaths: string[] = [];
@@ -161,9 +162,13 @@ async function main(): Promise<void> {
       }
     }
 
-    if (filePaths.length === 0) {
+    if (filePaths.length === 0 && !allowEmpty) {
       core.info("No files to commit");
       process.exit(0);
+    }
+
+    if (filePaths.length === 0 && allowEmpty) {
+      core.info("Creating empty commit (ALLOW_EMPTY=true)");
     }
 
     core.info(`Committing ${filePaths.length} file(s) to branch ${branch}`);
@@ -180,6 +185,7 @@ async function main(): Promise<void> {
       branch,
       message,
       filePaths,
+      allowEmpty,
       baseSha,
     });
 
