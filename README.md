@@ -19,7 +19,7 @@ A modular GitHub Action that commits changes via GitHub API, creating automatica
 
 ```yaml
 - name: Commit and push changes via API
-  uses: vig-os/commit-action@v0.1.3
+  uses: vig-os/commit-action@v0.1.4
   env:
     GITHUB_TOKEN: ${{ steps.sync.outputs.app-token || steps.sync.outputs.github-token }}
     GITHUB_REPOSITORY: ${{ github.repository }}
@@ -27,6 +27,7 @@ A modular GitHub Action that commits changes via GitHub API, creating automatica
     # OR use GITHUB_REF: refs/heads/main (may be overridden by workflow context)
     COMMIT_MESSAGE: "chore: sync issues and PRs"
     FILE_PATHS: ${{ steps.sync.outputs.modified-files || 'docs' }}
+    ALLOW_EMPTY: "false"  # Optional: when true, create empty commit if no file changes
 ```
 
 ### As a CLI Script
@@ -42,6 +43,7 @@ npm run commit
 - `GITHUB_REF` - Alternative branch reference (may conflict with GitHub's built-in variable if workflow runs on different branch)
 - `COMMIT_MESSAGE` - Commit message (defaults to "chore: update files")
 - `FILE_PATHS` - Comma-separated list of file paths or directories (or auto-detects from git status)
+- `ALLOW_EMPTY` - Optional flag (`true`/`false`, default `false`) to create an empty commit when no files changed
 - `BASE_SHA` - Optional base commit SHA (defaults to branch HEAD)
 
 **Note:** Use `TARGET_BRANCH` instead of `GITHUB_REF` to avoid conflicts when your workflow runs on a different branch than the target commit branch. GitHub Actions sets `GITHUB_REF` automatically based on the workflow trigger, which can override your explicit setting.

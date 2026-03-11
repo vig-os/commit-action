@@ -1,6 +1,6 @@
 {
   "name": "commit-action",
-  "version": "0.1.1",
+  "version": "0.1.4",
   "description": "Commit changes via GitHub API (signed commits, bypasses rulesets)",
   "main": "dist/commit.js",
   "scripts": {
@@ -29,7 +29,9 @@
   },
   "overrides": {
     "@actions/http-client": "3.0.2",
-    "undici": "6.23.0"
+    "undici": "6.23.0",
+    "minimatch@^3.0.0": "3.1.4",
+    "minimatch@^9.0.0": "9.0.7"
   },
   "devDependencies": {
     "@types/jest": "^29.5.0",

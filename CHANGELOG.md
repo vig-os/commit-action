@@ -5,7 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [v0.1.3] - 2026-01-28
+## [v0.1.4](https://github.com/vig-os/commit-action/releases/tag/v0.1.4) - 2026-03-11
+
+### Added
+
+- Added `ALLOW_EMPTY` environment variable support to allow creating signed empty commits when no file changes are detected
+- Added unit test coverage for empty commit behavior in `commitViaAPI()` and `commit-runner` flow handling
+
+### Changed
+
+- Updated npm dependency overrides to force patched `minimatch` versions across transitive dependency trees.
+- Updated `commitViaAPI()` to support empty commits by reusing the parent tree SHA when `ALLOW_EMPTY=true`
+- Updated runner behavior to preserve default no-op behavior when no files are detected, unless `ALLOW_EMPTY=true`
+- Updated README usage examples and environment variable documentation for `ALLOW_EMPTY`
+- Replaced `process.exit(0)` with early return in runner for improved testability
+
+### Fixed
+
+- Fixed missing `ALLOW_EMPTY` in commit-runner environment variable documentation
+
+### Security
+
+- Fixed `minimatch` ReDoS vulnerabilities (`CVE-2026-27903` / `GHSA-7r86-cg39-jmmj`) by pinning safe transitive versions via npm overrides.
+
+## [v0.1.3](https://github.com/vig-os/commit-action/releases/tag/v0.1.3) - 2026-01-28
 
 ### Added
 
@@ -27,7 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed moderate severity vulnerability in `undici` package (<6.23.0) by forcing upgrade via npm overrides
 
-## [v0.1.1] - 2025-12-19
+## [v0.1.1](https://github.com/vig-os/commit-action/releases/tag/v0.1.1) - 2025-12-19
 
 ### Changed
 
@@ -43,7 +66,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed action execution by bundling code and updating .gitignore to exclude dist directory
 
 
-## [v0.1.0] - 2025-12-17
+## [v0.1.0](https://github.com/vig-os/commit-action/releases/tag/v0.1.0) - 2025-12-17
 
 ### Added
 
@@ -63,7 +86,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for preserving file permissions (regular files and executables)
 - Base64 encoding for file content
 - Bundled distribution with ncc for GitHub Actions
-
-[v0.1.3]: https://github.com/vig-os/commit-action/releases/tag/v0.1.3
-[v0.1.1]: https://github.com/vig-os/commit-action/releases/tag/v0.1.1
-[v0.1.0]: https://github.com/vig-os/commit-action/releases/tag/v0.1.0

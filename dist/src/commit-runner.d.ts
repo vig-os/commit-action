@@ -8,6 +8,7 @@
  * - GITHUB_REF or TARGET_BRANCH: Branch reference (e.g., "refs/heads/dev" or just "dev")
  * - COMMIT_MESSAGE: Commit message
  * - FILE_PATHS: Comma-separated list of file paths to commit (or read from git status)
+ * - ALLOW_EMPTY: Set to "true" to allow empty commits when no files changed (default: false)
  */
 /**
  * Normalizes a Git reference to a branch name
@@ -26,4 +27,5 @@ export declare function resolveBranch(options: {
     githubRef?: string;
     contextRef: string;
 }): string;
+export declare function main(): Promise<void>;
 //# sourceMappingURL=commit-runner.d.ts.map

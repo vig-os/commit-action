@@ -10,6 +10,7 @@
  * - GITHUB_REF or TARGET_BRANCH: Branch reference (e.g., "refs/heads/dev" or just "dev")
  * - COMMIT_MESSAGE: Commit message
  * - FILE_PATHS: Comma-separated list of file paths to commit (or read from git status)
+ * - ALLOW_EMPTY: Set to "true" to allow empty commits when no files changed (default: false)
  */
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -47,6 +48,7 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.normalizeBranch = normalizeBranch;
 exports.resolveBranch = resolveBranch;
+exports.main = main;
 const core = __importStar(require("@actions/core"));
 const github = __importStar(require("@actions/github"));
 const child_process_1 = require("child_process");
@@ -123,6 +125,7 @@ async function main() {
         }
         // Get commit message
         const message = process.env.COMMIT_MESSAGE || "chore: update files";
+        const allowEmpty = (process.env.ALLOW_EMPTY || "").toLowerCase() === "true";
         // Get file paths from environment or detect from git status
         let filePaths = [];
         if (process.env.FILE_PATHS) {
@@ -180,9 +183,12 @@ async function main() {
                 throw new Error(`Failed to detect changed files from git status: ${error instanceof Error ? error.message : "Unknown error"}`);
             }
         }
-        if (filePaths.length === 0) {
+        if (filePaths.length === 0 && !allowEmpty) {
             core.info("No files to commit");
-            process.exit(0);
+            return;
+        }
+        if (filePaths.length === 0 && allowEmpty) {
+            core.info("Creating empty commit (ALLOW_EMPTY=true)");
         }
         core.info(`Committing ${filePaths.length} file(s) to branch ${branch}`);
         core.info(`Files: ${filePaths.join(", ")}`);
@@ -196,6 +202,7 @@ async function main() {
             branch,
             message,
             filePaths,
+            allowEmpty,
             baseSha,
         });
         core.info(`Created signed commit ${result.commitSha} via GitHub API`);
