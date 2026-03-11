@@ -9,13 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added `ALLOW_EMPTY` environment variable support to allow creating signed empty commits when no file changes are detected
+- Added unit test coverage for empty commit behavior in `commitViaAPI()` and `commit-runner` flow handling
+
 ### Changed
+
+- Updated `commitViaAPI()` to support empty commits by reusing the parent tree SHA when `ALLOW_EMPTY=true`
+- Updated runner behavior to preserve default no-op behavior when no files are detected, unless `ALLOW_EMPTY=true`
+- Updated README usage examples and environment variable documentation for `ALLOW_EMPTY`
+- Replaced `process.exit(0)` with early return in runner for improved testability
 
 ### Deprecated
 
 ### Removed
 
 ### Fixed
+
+- Fixed missing `ALLOW_EMPTY` in commit-runner environment variable documentation
 
 ### Security
 

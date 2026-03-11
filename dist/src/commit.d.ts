@@ -6,6 +6,7 @@ export interface CommitOptions {
     branch: string;
     message: string;
     filePaths: string[];
+    allowEmpty?: boolean;
     baseSha?: string;
 }
 export interface CommitResult {
