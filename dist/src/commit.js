@@ -132,8 +132,8 @@ async function getBranchInfo(octokit, owner, repo, branch) {
  * This is designed to be modular and reusable - can be used as a standalone action
  */
 async function commitViaAPI(options) {
-    const { token, owner, repo, branch, message, filePaths, baseSha } = options;
-    if (filePaths.length === 0) {
+    const { token, owner, repo, branch, message, filePaths, allowEmpty, baseSha } = options;
+    if (filePaths.length === 0 && !allowEmpty) {
         throw new Error("No files to commit");
     }
     const octokit = github.getOctokit(token);
@@ -156,8 +156,10 @@ async function commitViaAPI(options) {
         branchSha = branchInfo.sha;
         baseTreeSha = branchInfo.treeSha;
     }
-    // Create new tree with updated files
-    const newTreeSha = await createTree(octokit, owner, repo, baseTreeSha, filePaths);
+    // For empty commits, reuse parent tree SHA; otherwise create a new tree.
+    const newTreeSha = filePaths.length === 0
+        ? baseTreeSha
+        : await createTree(octokit, owner, repo, baseTreeSha, filePaths);
     // Create commit (automatically signed by GitHub)
     const commitSha = await createCommit(octokit, owner, repo, newTreeSha, branchSha, message);
     // Update branch reference

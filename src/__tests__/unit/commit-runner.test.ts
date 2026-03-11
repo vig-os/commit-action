@@ -200,23 +200,16 @@ describe("commit-runner", () => {
       expect(core.info).toHaveBeenCalledWith("Creating empty commit (ALLOW_EMPTY=true)");
     });
 
-    it("should exit 0 when no files and ALLOW_EMPTY is unset", async () => {
+    it("should return early when no files and ALLOW_EMPTY is unset", async () => {
       delete process.env.ALLOW_EMPTY;
       delete process.env.FILE_PATHS;
       (execSync as jest.Mock).mockReturnValue("");
 
-      const exitSpy = jest
-        .spyOn(process, "exit")
-        .mockImplementation((() => {
-          throw new Error("EXIT_0");
-        }) as never);
-
-      await expect(main()).rejects.toThrow("EXIT_0");
+      await main();
 
       expect(core.info).toHaveBeenCalledWith("No files to commit");
-      expect(exitSpy).toHaveBeenCalledWith(0);
       expect(commitViaAPI).not.toHaveBeenCalled();
-      exitSpy.mockRestore();
+      expect(core.setFailed).not.toHaveBeenCalled();
     });
 
     it("should treat ALLOW_EMPTY=TRUE as true", async () => {

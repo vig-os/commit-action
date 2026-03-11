@@ -9,6 +9,7 @@
  * - GITHUB_REF or TARGET_BRANCH: Branch reference (e.g., "refs/heads/dev" or just "dev")
  * - COMMIT_MESSAGE: Commit message
  * - FILE_PATHS: Comma-separated list of file paths to commit (or read from git status)
+ * - ALLOW_EMPTY: Set to "true" to allow empty commits when no files changed (default: false)
  */
 
 import * as core from "@actions/core";
@@ -164,7 +165,7 @@ export async function main(): Promise<void> {
 
     if (filePaths.length === 0 && !allowEmpty) {
       core.info("No files to commit");
-      process.exit(0);
+      return;
     }
 
     if (filePaths.length === 0 && allowEmpty) {
