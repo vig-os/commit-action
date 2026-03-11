@@ -235,6 +235,82 @@ describe("commit", () => {
                 filePaths: [],
             })).rejects.toThrow("No files to commit");
         });
+        it("should create an empty commit when allowEmpty is true and filePaths is empty", async () => {
+            // Mock branch info
+            mockOctokit.rest.git.getRef.mockResolvedValue({
+                data: { object: { sha: "base-sha" } },
+            });
+            mockOctokit.rest.git.getCommit.mockResolvedValue({
+                data: { tree: { sha: "base-tree-sha" } },
+            });
+            // Mock commit creation
+            mockOctokit.rest.git.createCommit.mockResolvedValue({
+                data: { sha: "empty-commit-sha" },
+            });
+            // Mock ref update
+            mockOctokit.rest.git.updateRef.mockResolvedValue({ data: {} });
+            const result = await (0, commit_1.commitViaAPI)({
+                token: "test-token",
+                owner: "owner",
+                repo: "repo",
+                branch: "dev",
+                message: "Test empty commit",
+                filePaths: [],
+                allowEmpty: true,
+            });
+            expect(mockOctokit.rest.git.createBlob).not.toHaveBeenCalled();
+            expect(mockOctokit.rest.git.createTree).not.toHaveBeenCalled();
+            expect(mockOctokit.rest.git.createCommit).toHaveBeenCalledWith({
+                owner: "owner",
+                repo: "repo",
+                message: "Test empty commit",
+                tree: "base-tree-sha",
+                parents: ["base-sha"],
+            });
+            expect(result.commitSha).toBe("empty-commit-sha");
+            expect(result.treeSha).toBe("base-tree-sha");
+            expect(result.filesCommitted).toBe(0);
+        });
+        it("should commit normally when allowEmpty is true and files are provided", async () => {
+            const fs = require("fs");
+            fs.existsSync = jest.fn().mockReturnValue(true);
+            fs.readFileSync = jest.fn().mockReturnValue(Buffer.from("content"));
+            fs.statSync = jest.fn().mockReturnValue({ mode: 0o644 });
+            // Mock branch info
+            mockOctokit.rest.git.getRef.mockResolvedValue({
+                data: { object: { sha: "base-sha" } },
+            });
+            mockOctokit.rest.git.getCommit.mockResolvedValue({
+                data: { tree: { sha: "base-tree-sha" } },
+            });
+            // Mock blob creation
+            mockOctokit.rest.git.createBlob.mockResolvedValue({
+                data: { sha: "blob-sha" },
+            });
+            // Mock tree creation
+            mockOctokit.rest.git.createTree.mockResolvedValue({
+                data: { sha: "new-tree-sha" },
+            });
+            // Mock commit creation
+            mockOctokit.rest.git.createCommit.mockResolvedValue({
+                data: { sha: "commit-sha" },
+            });
+            // Mock ref update
+            mockOctokit.rest.git.updateRef.mockResolvedValue({ data: {} });
+            const result = await (0, commit_1.commitViaAPI)({
+                token: "test-token",
+                owner: "owner",
+                repo: "repo",
+                branch: "dev",
+                message: "Test commit",
+                filePaths: ["file1.txt"],
+                allowEmpty: true,
+            });
+            expect(mockOctokit.rest.git.createTree).toHaveBeenCalled();
+            expect(result.commitSha).toBe("commit-sha");
+            expect(result.treeSha).toBe("new-tree-sha");
+            expect(result.filesCommitted).toBe(1);
+        });
     });
 });
 //# sourceMappingURL=commit.test.js.map

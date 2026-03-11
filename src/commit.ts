@@ -8,6 +8,7 @@ export interface CommitOptions {
   branch: string;
   message: string;
   filePaths: string[];
+  allowEmpty?: boolean;
   baseSha?: string;
 }
 
@@ -156,9 +157,10 @@ export async function getBranchInfo(
 export async function commitViaAPI(
   options: CommitOptions
 ): Promise<CommitResult> {
-  const { token, owner, repo, branch, message, filePaths, baseSha } = options;
+  const { token, owner, repo, branch, message, filePaths, allowEmpty, baseSha } =
+    options;
 
-  if (filePaths.length === 0) {
+  if (filePaths.length === 0 && !allowEmpty) {
     throw new Error("No files to commit");
   }
 
@@ -184,14 +186,11 @@ export async function commitViaAPI(
     baseTreeSha = branchInfo.treeSha;
   }
 
-  // Create new tree with updated files
-  const newTreeSha = await createTree(
-    octokit,
-    owner,
-    repo,
-    baseTreeSha,
-    filePaths
-  );
+  // For empty commits, reuse parent tree SHA; otherwise create a new tree.
+  const newTreeSha =
+    filePaths.length === 0
+      ? baseTreeSha
+      : await createTree(octokit, owner, repo, baseTreeSha, filePaths);
 
   // Create commit (automatically signed by GitHub)
   const commitSha = await createCommit(
