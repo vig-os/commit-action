@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /**
  * CLI runner for commit module
  * Reads environment variables and commits changes via GitHub API

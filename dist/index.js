@@ -35257,6 +35257,7 @@ function wrappy (fn, cb) {
  * - GITHUB_REF or TARGET_BRANCH: Branch reference (e.g., "refs/heads/dev" or just "dev")
  * - COMMIT_MESSAGE: Commit message
  * - FILE_PATHS: Comma-separated list of file paths to commit (or read from git status)
+ * - ALLOW_EMPTY: Set to "true" to allow empty commits when no files changed (default: false)
  */
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -35431,7 +35432,7 @@ async function main() {
         }
         if (filePaths.length === 0 && !allowEmpty) {
             core.info("No files to commit");
-            process.exit(0);
+            return;
         }
         if (filePaths.length === 0 && allowEmpty) {
             core.info("Creating empty commit (ALLOW_EMPTY=true)");
