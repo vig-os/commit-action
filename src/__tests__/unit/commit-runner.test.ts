@@ -229,4 +229,62 @@ describe("commit-runner", () => {
       );
     });
   });
+
+  describe("main FILE_PATHS directory expansion", () => {
+    const originalEnv = process.env;
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      process.env = {
+        ...originalEnv,
+        GITHUB_TOKEN: "test-token",
+        GITHUB_REPOSITORY: "owner/repo",
+        TARGET_BRANCH: "refs/heads/main",
+        COMMIT_MESSAGE: "Test commit",
+      };
+      (github.context as any).ref = "refs/heads/main";
+      (commitViaAPI as jest.Mock).mockResolvedValue({
+        commitSha: "commit-sha",
+        treeSha: "tree-sha",
+        filesCommitted: 0,
+      });
+    });
+
+    afterAll(() => {
+      process.env = originalEnv;
+    });
+
+    it("should exclude .git directory contents when expanding FILE_PATHS directories", async () => {
+      process.env.FILE_PATHS = ".";
+
+      const fs = require("fs");
+      fs.existsSync = jest.fn().mockReturnValue(true);
+      fs.readdirSync = jest.fn((dir: string) => {
+        if (dir === ".") return ["src", ".git", "README.md"];
+        if (dir === "src") return ["index.ts"];
+        if (dir === ".git") return ["config", "objects"];
+        if (dir === ".git/objects") return ["abc123"];
+        return [];
+      });
+      fs.statSync = jest.fn((targetPath: string) => {
+        const isDirectory =
+          targetPath === "." ||
+          targetPath === "src" ||
+          targetPath === ".git" ||
+          targetPath === ".git/objects";
+        return {
+          isDirectory: () => isDirectory,
+          isFile: () => !isDirectory,
+        };
+      });
+
+      await main();
+
+      expect(commitViaAPI).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filePaths: ["src/index.ts", "README.md"],
+        })
+      );
+    });
+  });
 });
