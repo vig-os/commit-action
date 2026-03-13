@@ -185,7 +185,7 @@ describe("commit-runner", () => {
         it("should pass allowEmpty true to commitViaAPI when ALLOW_EMPTY=true", async () => {
             process.env.ALLOW_EMPTY = "true";
             process.env.FILE_PATHS = "file.txt";
-            const fs = require("fs");
+            const fs = jest.requireMock("fs");
             fs.existsSync = jest.fn().mockReturnValue(true);
             fs.statSync = jest.fn().mockReturnValue({ isDirectory: () => false });
             await (0, commit_runner_1.main)();
@@ -213,7 +213,7 @@ describe("commit-runner", () => {
         it("should treat ALLOW_EMPTY=TRUE as true", async () => {
             process.env.ALLOW_EMPTY = "TRUE";
             process.env.FILE_PATHS = "file.txt";
-            const fs = require("fs");
+            const fs = jest.requireMock("fs");
             fs.existsSync = jest.fn().mockReturnValue(true);
             fs.statSync = jest.fn().mockReturnValue({ isDirectory: () => false });
             await (0, commit_runner_1.main)();
@@ -245,7 +245,7 @@ describe("commit-runner", () => {
         });
         it("should exclude .git directory contents when expanding FILE_PATHS directories", async () => {
             process.env.FILE_PATHS = ".";
-            const fs = require("fs");
+            const fs = jest.requireMock("fs");
             fs.existsSync = jest.fn().mockReturnValue(true);
             fs.readdirSync = jest.fn((dir) => {
                 if (dir === ".")
@@ -271,6 +271,18 @@ describe("commit-runner", () => {
             await (0, commit_runner_1.main)();
             expect(commit_1.commitViaAPI).toHaveBeenCalledWith(expect.objectContaining({
                 filePaths: ["src/index.ts", "README.md"],
+            }));
+        });
+        it("should ignore direct .git paths in FILE_PATHS while keeping normal paths", async () => {
+            process.env.FILE_PATHS = ".git,.git/config,README.md,src/index.ts";
+            const fs = jest.requireMock("fs");
+            fs.existsSync = jest.fn().mockReturnValue(true);
+            fs.statSync = jest.fn().mockReturnValue({
+                isDirectory: () => false,
+            });
+            await (0, commit_runner_1.main)();
+            expect(commit_1.commitViaAPI).toHaveBeenCalledWith(expect.objectContaining({
+                filePaths: ["README.md", "src/index.ts"],
             }));
         });
     });
