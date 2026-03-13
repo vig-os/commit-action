@@ -42,7 +42,7 @@ npm run commit
 - `TARGET_BRANCH` - **Preferred**: Branch reference (e.g., "refs/heads/main" or just "main", defaults to workflow context)
 - `GITHUB_REF` - Alternative branch reference (may conflict with GitHub's built-in variable if workflow runs on different branch)
 - `COMMIT_MESSAGE` - Commit message (defaults to "chore: update files")
-- `FILE_PATHS` - Comma-separated list of file paths or directories (or auto-detects from git status)
+- `FILE_PATHS` - Comma-separated list of file paths or directories (or auto-detects from git status); `.git` metadata paths in `FILE_PATHS` are ignored (both direct paths and directory expansion)
 - `ALLOW_EMPTY` - Optional flag (`true`/`false`, default `false`) to create an empty commit when no files changed
 - `BASE_SHA` - Optional base commit SHA (defaults to branch HEAD)
 

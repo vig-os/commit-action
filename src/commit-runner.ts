@@ -58,6 +58,33 @@ export function resolveBranch(options: {
   }
 }
 
+function isGitMetadataPath(targetPath: string): boolean {
+  const segments = path
+    .normalize(targetPath)
+    .split(/[\\/]+/)
+    .filter((segment) => segment.length > 0);
+  return segments.includes(".git");
+}
+
+function findFilesRecursively(dir: string): string[] {
+  const files: string[] = [];
+  const entries = fs.readdirSync(dir);
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry);
+    if (isGitMetadataPath(fullPath)) {
+      continue;
+    }
+
+    const entryStats = fs.statSync(fullPath);
+    if (entryStats.isDirectory()) {
+      files.push(...findFilesRecursively(fullPath));
+    } else if (entryStats.isFile()) {
+      files.push(fullPath);
+    }
+  }
+  return files;
+}
+
 export async function main(): Promise<void> {
   try {
     // Get token from environment
@@ -112,25 +139,14 @@ export async function main(): Promise<void> {
 
       // Expand directories to individual files
       for (const pathItem of paths) {
+        if (isGitMetadataPath(pathItem)) {
+          continue;
+        }
+
         if (fs.existsSync(pathItem)) {
           const stats = fs.statSync(pathItem);
           if (stats.isDirectory()) {
-            // Recursively find all files in directory
-            const findFiles = (dir: string): string[] => {
-              const files: string[] = [];
-              const entries = fs.readdirSync(dir);
-              for (const entry of entries) {
-                const fullPath = path.join(dir, entry);
-                const entryStats = fs.statSync(fullPath);
-                if (entryStats.isDirectory()) {
-                  files.push(...findFiles(fullPath));
-                } else if (entryStats.isFile()) {
-                  files.push(fullPath);
-                }
-              }
-              return files;
-            };
-            filePaths.push(...findFiles(pathItem));
+            filePaths.push(...findFilesRecursively(pathItem));
           } else {
             filePaths.push(pathItem);
           }
