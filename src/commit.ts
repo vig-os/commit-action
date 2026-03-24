@@ -1,5 +1,6 @@
 import * as github from "@actions/github";
 import * as fs from "fs";
+import { withRetry } from "./retry";
 
 export interface CommitOptions {
   token: string;
@@ -10,6 +11,14 @@ export interface CommitOptions {
   filePaths: string[];
   allowEmpty?: boolean;
   baseSha?: string;
+  /** Max API attempt count (default 1 = no retries). */
+  maxAttempts?: number;
+  /** Logger for retry messages (default: console.info). */
+  logger?: (msg: string) => void;
+  /** Base delay in ms for retry backoff (test tuning). */
+  baseDelayMs?: number;
+  /** Max delay cap in ms for retry backoff (test tuning). */
+  maxDelayMs?: number;
 }
 
 export interface CommitResult {
@@ -275,14 +284,32 @@ export async function getBranchInfo(
 export async function commitViaAPI(
   options: CommitOptions
 ): Promise<CommitResult> {
-  const { token, owner, repo, branch, message, filePaths, allowEmpty, baseSha } =
-    options;
+  const {
+    token,
+    owner,
+    repo,
+    branch,
+    message,
+    filePaths,
+    allowEmpty,
+    baseSha,
+    maxAttempts = 1,
+    logger,
+    baseDelayMs,
+    maxDelayMs,
+  } = options;
 
   if (filePaths.length === 0 && !allowEmpty) {
     throw new Error("No files to commit");
   }
 
   const octokit = github.getOctokit(token);
+  const retryConfig = {
+    maxAttempts,
+    ...(baseDelayMs !== undefined && { baseDelayMs }),
+    ...(maxDelayMs !== undefined && { maxDelayMs }),
+  };
+  const log = logger ?? console.info;
 
   // Get branch info (SHA and tree SHA)
   let branchSha: string;
@@ -291,15 +318,24 @@ export async function commitViaAPI(
   if (baseSha) {
     // Use provided base SHA
     branchSha = baseSha;
-    const { data: commit } = await octokit.rest.git.getCommit({
-      owner,
-      repo,
-      commit_sha: baseSha,
-    });
+    const { data: commit } = await withRetry(
+      () =>
+        octokit.rest.git.getCommit({
+          owner,
+          repo,
+          commit_sha: baseSha,
+        }),
+      retryConfig,
+      log
+    );
     baseTreeSha = commit.tree.sha;
   } else {
     // Fetch from branch
-    const branchInfo = await getBranchInfo(octokit, owner, repo, branch);
+    const branchInfo = await withRetry(
+      () => getBranchInfo(octokit, owner, repo, branch),
+      retryConfig,
+      log
+    );
     branchSha = branchInfo.sha;
     baseTreeSha = branchInfo.treeSha;
   }
@@ -308,20 +344,33 @@ export async function commitViaAPI(
   const newTreeSha =
     filePaths.length === 0
       ? baseTreeSha
-      : await createTree(octokit, owner, repo, baseTreeSha, filePaths);
+      : await withRetry(
+          () => createTree(octokit, owner, repo, baseTreeSha, filePaths),
+          retryConfig,
+          log
+        );
 
   // Create commit (automatically signed by GitHub)
-  const commitSha = await createCommit(
-    octokit,
-    owner,
-    repo,
-    newTreeSha,
-    branchSha,
-    message
+  const commitSha = await withRetry(
+    () =>
+      createCommit(
+        octokit,
+        owner,
+        repo,
+        newTreeSha,
+        branchSha,
+        message
+      ),
+    retryConfig,
+    log
   );
 
   // Update branch reference
-  await updateBranch(octokit, owner, repo, branch, commitSha, false);
+  await withRetry(
+    () => updateBranch(octokit, owner, repo, branch, commitSha, false),
+    retryConfig,
+    log
+  );
 
   return {
     commitSha,
