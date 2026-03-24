@@ -18,7 +18,10 @@ export interface CommitResult {
   filesCommitted: number;
 }
 
-/** Max tree entries per createTree request (payload / GitHub limits). */
+/**
+ * Max tree entries per createTree request. Keeps payloads comfortably under
+ * GitHub's ~25 MB request body limit and avoids slow single-call responses.
+ */
 export const TREE_ENTRY_CHUNK_SIZE = 100;
 
 /**
