@@ -305,4 +305,96 @@ describe("commit-runner", () => {
       );
     });
   });
+
+  describe("main MAX_ATTEMPTS behavior", () => {
+    const originalEnv = process.env;
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      process.env = {
+        ...originalEnv,
+        GITHUB_TOKEN: "test-token",
+        GITHUB_REPOSITORY: "owner/repo",
+        TARGET_BRANCH: "refs/heads/main",
+        COMMIT_MESSAGE: "Test commit",
+        FILE_PATHS: "file.txt",
+      };
+      (github.context as any).ref = "refs/heads/main";
+      (commitViaAPI as jest.Mock).mockResolvedValue({
+        commitSha: "commit-sha",
+        treeSha: "tree-sha",
+        filesCommitted: 1,
+      });
+      const fs = jest.requireMock("fs");
+      fs.existsSync = jest.fn().mockReturnValue(true);
+      fs.statSync = jest.fn().mockReturnValue({ isDirectory: () => false });
+    });
+
+    afterAll(() => {
+      process.env = originalEnv;
+    });
+
+    it("should pass maxAttempts 1 when MAX_ATTEMPTS is not set", async () => {
+      delete process.env.MAX_ATTEMPTS;
+
+      await main();
+
+      expect(commitViaAPI).toHaveBeenCalledWith(
+        expect.objectContaining({
+          maxAttempts: 1,
+        })
+      );
+    });
+
+    it("should pass parsed maxAttempts 3 when MAX_ATTEMPTS=3", async () => {
+      process.env.MAX_ATTEMPTS = "3";
+
+      await main();
+
+      expect(commitViaAPI).toHaveBeenCalledWith(
+        expect.objectContaining({
+          maxAttempts: 3,
+        })
+      );
+    });
+
+    it("should clamp invalid MAX_ATTEMPTS to 1 with warning", async () => {
+      process.env.MAX_ATTEMPTS = "0";
+
+      await main();
+
+      expect(commitViaAPI).toHaveBeenCalledWith(
+        expect.objectContaining({
+          maxAttempts: 1,
+        })
+      );
+      expect(core.info).toHaveBeenCalledWith(
+        expect.stringMatching(/MAX_ATTEMPTS|1|invalid|clamp/i)
+      );
+    });
+
+    it("should clamp negative MAX_ATTEMPTS to 1", async () => {
+      process.env.MAX_ATTEMPTS = "-1";
+
+      await main();
+
+      expect(commitViaAPI).toHaveBeenCalledWith(
+        expect.objectContaining({
+          maxAttempts: 1,
+        })
+      );
+    });
+
+    it("should clamp non-numeric MAX_ATTEMPTS to 1", async () => {
+      process.env.MAX_ATTEMPTS = "abc";
+
+      await main();
+
+      expect(commitViaAPI).toHaveBeenCalledWith(
+        expect.objectContaining({
+          maxAttempts: 1,
+        })
+      );
+    });
+  });
 });
