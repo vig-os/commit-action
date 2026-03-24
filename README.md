@@ -20,7 +20,7 @@ A modular GitHub Action that commits changes via GitHub API, creating automatica
 
 ```yaml
 - name: Commit and push changes via API
-  uses: vig-os/commit-action@v0.1.5
+  uses: vig-os/commit-action@main
   env:
     GITHUB_TOKEN: ${{ steps.sync.outputs.app-token || steps.sync.outputs.github-token }}
     GITHUB_REPOSITORY: ${{ github.repository }}
@@ -30,6 +30,8 @@ A modular GitHub Action that commits changes via GitHub API, creating automatica
     FILE_PATHS: ${{ steps.sync.outputs.modified-files || 'docs' }}
     ALLOW_EMPTY: "false"  # Optional: when true, create empty commit if no file changes
 ```
+
+Inline `createTree` optimization is in `[Unreleased]`; until the next release, pin `@main` for that behavior. Published tags (e.g. `@v0.1.5`) use the previous implementation.
 
 ### As a CLI Script
 
