@@ -147,42 +147,28 @@ export async function createTree(
   baseTreeSha: string,
   filePaths: string[]
 ): Promise<string> {
-  const isBinaryByPath = new Map<string, boolean>();
-  const binaryPaths: string[] = [];
-  for (const p of filePaths) {
-    const binary = isBinaryFile(p);
-    isBinaryByPath.set(p, binary);
-    if (binary) {
-      binaryPaths.push(p);
-    }
-  }
-
-  const blobByPath = new Map<string, { sha: string; mode: "100644" | "100755" }>();
-  for (const filePath of binaryPaths) {
-    const result = await createBlob(octokit, owner, repo, filePath);
-    blobByPath.set(filePath, result);
-  }
-
   const treeEntries: TreeBlobEntry[] = [];
-  const utf8Decoder = new TextDecoder("utf-8", { fatal: true });
 
   for (const filePath of filePaths) {
-    if (isBinaryByPath.get(filePath)) {
-      const { sha, mode } = blobByPath.get(filePath)!;
+    const stat = fs.statSync(filePath);
+    const mode: "100644" | "100755" =
+      stat.mode & 0o111 ? "100755" : "100644";
+    const isBinary = isBinaryFromStat(filePath, stat);
+
+    if (isBinary) {
+      const result = await createBlob(octokit, owner, repo, filePath, { mode });
       treeEntries.push({
         path: filePath,
-        mode,
+        mode: result.mode,
         type: "blob" as const,
-        sha,
+        sha: result.sha,
       });
       continue;
     }
 
-    const mode = getFileMode(filePath);
     const raw = fs.readFileSync(filePath);
-
     try {
-      const content = utf8Decoder.decode(raw);
+      const content = new TextDecoder("utf-8", { fatal: true }).decode(raw);
       treeEntries.push({
         path: filePath,
         mode,
@@ -190,12 +176,18 @@ export async function createTree(
         content,
       });
     } catch {
-      const result = await createBlob(octokit, owner, repo, filePath);
+      const base64Content = raw.toString("base64");
+      const { data: blob } = await octokit.rest.git.createBlob({
+        owner,
+        repo,
+        content: base64Content,
+        encoding: "base64",
+      });
       treeEntries.push({
         path: filePath,
-        mode: result.mode,
+        mode,
         type: "blob" as const,
-        sha: result.sha,
+        sha: blob.sha,
       });
     }
   }
