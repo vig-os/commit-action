@@ -235,6 +235,33 @@ describe("commit", () => {
             expect(mockOctokit.rest.git.createTree.mock.calls[1][0].tree).toHaveLength(1);
             expect(mockOctokit.rest.git.createBlob).not.toHaveBeenCalled();
         });
+        it("should chain createTree 3 times for 201 files (2 full chunks + 1)", async () => {
+            const fs = require("fs");
+            const n = commit_1.TREE_ENTRY_CHUNK_SIZE * 2 + 1;
+            const paths = Array.from({ length: n }, (_, i) => `f${i}.txt`);
+            fs.existsSync = jest.fn().mockReturnValue(true);
+            fs.statSync = jest.fn().mockReturnValue({ mode: 0o644, size: 4 });
+            fs.readFileSync = jest.fn((path, enc) => {
+                if (enc === "utf-8") {
+                    return "ab";
+                }
+                return Buffer.from("ab");
+            });
+            mockOctokit.rest.git.createTree
+                .mockResolvedValueOnce({ data: { sha: "tree-chunk-1" } })
+                .mockResolvedValueOnce({ data: { sha: "tree-chunk-2" } })
+                .mockResolvedValueOnce({ data: { sha: "tree-chunk-3" } });
+            const result = await (0, commit_1.createTree)(mockOctokit, "owner", "repo", "base-tree-sha", paths);
+            expect(result).toBe("tree-chunk-3");
+            expect(mockOctokit.rest.git.createTree).toHaveBeenCalledTimes(3);
+            expect(mockOctokit.rest.git.createTree.mock.calls[0][0].base_tree).toBe("base-tree-sha");
+            expect(mockOctokit.rest.git.createTree.mock.calls[0][0].tree).toHaveLength(commit_1.TREE_ENTRY_CHUNK_SIZE);
+            expect(mockOctokit.rest.git.createTree.mock.calls[1][0].base_tree).toBe("tree-chunk-1");
+            expect(mockOctokit.rest.git.createTree.mock.calls[1][0].tree).toHaveLength(commit_1.TREE_ENTRY_CHUNK_SIZE);
+            expect(mockOctokit.rest.git.createTree.mock.calls[2][0].base_tree).toBe("tree-chunk-2");
+            expect(mockOctokit.rest.git.createTree.mock.calls[2][0].tree).toHaveLength(1);
+            expect(mockOctokit.rest.git.createBlob).not.toHaveBeenCalled();
+        });
         it("should fall back to createBlob for non-UTF-8 text files (no NUL in prefix)", async () => {
             const fs = require("fs");
             fs.existsSync = jest.fn().mockReturnValue(true);
