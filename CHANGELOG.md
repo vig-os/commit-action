@@ -5,19 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [v0.2.0](https://github.com/vig-os/commit-action/releases/tag/v0.2.0) - 2026-03-24
 
 ### Added
 
+- Bounded retry with exponential backoff for transient GitHub API failures (`404`, `5xx`, `429`, and `403` when the error message indicates rate limit or abuse), configurable via **`MAX_ATTEMPTS`** and **`CommitOptions`** (`maxAttempts`, `logger`, optional `baseDelayMs` / `maxDelayMs`); new retry module helpers `isTransientError`, `classifyError`, `calculateDelay`, and `withRetry` (issue #20).
 - Efficient multi-file commits via GitHub `createTree` **inline `content`** for text files (blobs created server-side), **`createBlob`** only for binary files (NUL detected in the first 8 KiB), and **chained `createTree`** requests in chunks of **`TREE_ENTRY_CHUNK_SIZE` (100)** entries for very large change sets and payload limits (issue #19).
 
 ### Changed
 
+- README Action example uses a tagged release (`@v0.1.5`) instead of `@main` for reproducibility; unreleased behavior remains documented in the same section.
 - Exported helpers for library use: `isBinaryFile`, `getFileMode`, and `TREE_ENTRY_CHUNK_SIZE` from `commit.ts`.
 - Binary blob creation is now sequential instead of concurrent to avoid secondary rate-limit bursts.
 
 ### Fixed
 
+- `withRetry` could surface `undefined` when `maxAttempts` was non-positive or non-finite; values are now normalized to at least one attempt.
+- HTTP-like error detection for retries now requires `status` to be a number (avoids misclassifying odd error shapes).
+- Non-UTF-8 text fallback in `createTree` delegates to `createBlob()` so blob behavior stays consistent.
 - `isBinaryFile` false positives when `readSync` returns fewer bytes than requested (zero-filled buffer tail).
 - Silent data corruption for non-UTF-8 text files by validating with `TextDecoder({ fatal: true })` and falling back to `createBlob`.
 
