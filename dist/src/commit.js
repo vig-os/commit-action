@@ -60,13 +60,17 @@ function isBinaryFile(filePath) {
     const toRead = Math.min(8192, stat.size);
     const buf = Buffer.alloc(toRead);
     const fd = fs.openSync(filePath, "r");
+    let bytesRead = 0;
     try {
-        fs.readSync(fd, buf, 0, toRead, 0);
+        bytesRead = fs.readSync(fd, buf, 0, toRead, 0);
     }
     finally {
         fs.closeSync(fd);
     }
-    return buf.includes(0);
+    if (bytesRead === 0) {
+        return false;
+    }
+    return buf.subarray(0, bytesRead).includes(0);
 }
 /**
  * Git tree file mode from local file permissions.
@@ -125,29 +129,44 @@ async function createTree(octokit, owner, repo, baseTreeSha, filePaths) {
         }
     }
     const blobByPath = new Map();
-    await Promise.all(binaryPaths.map(async (filePath) => {
+    for (const filePath of binaryPaths) {
         const result = await createBlob(octokit, owner, repo, filePath);
         blobByPath.set(filePath, result);
-    }));
-    const treeEntries = filePaths.map((filePath) => {
+    }
+    const treeEntries = [];
+    const utf8Decoder = new TextDecoder("utf-8", { fatal: true });
+    for (const filePath of filePaths) {
         if (isBinaryByPath.get(filePath)) {
             const { sha, mode } = blobByPath.get(filePath);
-            return {
+            treeEntries.push({
                 path: filePath,
                 mode,
                 type: "blob",
                 sha,
-            };
+            });
+            continue;
         }
-        const content = fs.readFileSync(filePath, "utf-8");
         const mode = getFileMode(filePath);
-        return {
-            path: filePath,
-            mode,
-            type: "blob",
-            content,
-        };
-    });
+        const raw = fs.readFileSync(filePath);
+        try {
+            const content = utf8Decoder.decode(raw);
+            treeEntries.push({
+                path: filePath,
+                mode,
+                type: "blob",
+                content,
+            });
+        }
+        catch {
+            const result = await createBlob(octokit, owner, repo, filePath);
+            treeEntries.push({
+                path: filePath,
+                mode: result.mode,
+                type: "blob",
+                sha: result.sha,
+            });
+        }
+    }
     if (treeEntries.length === 0) {
         return baseTreeSha;
     }

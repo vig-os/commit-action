@@ -235,6 +235,44 @@ describe("commit", () => {
             expect(mockOctokit.rest.git.createTree.mock.calls[1][0].tree).toHaveLength(1);
             expect(mockOctokit.rest.git.createBlob).not.toHaveBeenCalled();
         });
+        it("should fall back to createBlob for non-UTF-8 text files (no NUL in prefix)", async () => {
+            const fs = require("fs");
+            fs.existsSync = jest.fn().mockReturnValue(true);
+            fs.statSync = jest.fn().mockReturnValue({ mode: 0o644, size: 4 });
+            fs.readSync = jest.fn((_fd, buf, offset = 0, length) => {
+                const n = length ?? buf.length - offset;
+                buf.fill(0xc0, offset, offset + n);
+                return n;
+            });
+            fs.readFileSync = jest.fn((path) => {
+                return Buffer.from([0x80, 0x81]);
+            });
+            mockOctokit.rest.git.createBlob.mockResolvedValue({
+                data: { sha: "blob-utf8-fallback" },
+            });
+            mockOctokit.rest.git.createTree.mockResolvedValue({
+                data: { sha: "tree-utf8" },
+            });
+            await (0, commit_1.createTree)(mockOctokit, "owner", "repo", "base", ["latin1.txt"]);
+            expect(mockOctokit.rest.git.createBlob).toHaveBeenCalledTimes(1);
+            expect(mockOctokit.rest.git.createBlob).toHaveBeenCalledWith(expect.objectContaining({
+                owner: "owner",
+                repo: "repo",
+            }));
+            expect(mockOctokit.rest.git.createTree).toHaveBeenCalledWith({
+                owner: "owner",
+                repo: "repo",
+                base_tree: "base",
+                tree: [
+                    {
+                        path: "latin1.txt",
+                        mode: "100644",
+                        type: "blob",
+                        sha: "blob-utf8-fallback",
+                    },
+                ],
+            });
+        });
     });
     describe("isBinaryFile", () => {
         it("returns false when prefix has no NUL byte", () => {
@@ -264,6 +302,17 @@ describe("commit", () => {
             const fs = require("fs");
             fs.existsSync = jest.fn().mockReturnValue(false);
             expect(() => (0, commit_1.isBinaryFile)("missing")).toThrow("File not found");
+        });
+        it("returns false when readSync returns fewer bytes than requested (avoids false positive from zero-filled buffer)", () => {
+            const fs = require("fs");
+            fs.existsSync = jest.fn().mockReturnValue(true);
+            fs.statSync = jest.fn().mockReturnValue({ size: 100 });
+            fs.readSync = jest.fn((_fd, buf, offset = 0, length) => {
+                const n = length ?? buf.length - offset;
+                Buffer.from("abc").copy(buf, offset, 0, Math.min(3, n));
+                return 3;
+            });
+            expect((0, commit_1.isBinaryFile)("x.txt")).toBe(false);
         });
     });
     describe("getFileMode", () => {
