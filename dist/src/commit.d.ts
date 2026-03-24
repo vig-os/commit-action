@@ -14,6 +14,16 @@ export interface CommitResult {
     treeSha: string;
     filesCommitted: number;
 }
+/** Max tree entries per createTree request (payload / GitHub limits). */
+export declare const TREE_ENTRY_CHUNK_SIZE = 100;
+/**
+ * Returns true if the file appears binary (null byte in first 8 KiB), matching Git's heuristic.
+ */
+export declare function isBinaryFile(filePath: string): boolean;
+/**
+ * Git tree file mode from local file permissions.
+ */
+export declare function getFileMode(filePath: string): "100644" | "100755";
 /**
  * Creates a Git blob for a file via GitHub API
  */
@@ -22,7 +32,8 @@ export declare function createBlob(octokit: ReturnType<typeof github.getOctokit>
     mode: "100644" | "100755";
 }>;
 /**
- * Creates a Git tree with updated files via GitHub API
+ * Creates a Git tree with updated files via GitHub API.
+ * Text files use inline `content` (one fewer API call per file). Binary files use createBlob.
  */
 export declare function createTree(octokit: ReturnType<typeof github.getOctokit>, owner: string, repo: string, baseTreeSha: string, filePaths: string[]): Promise<string>;
 /**

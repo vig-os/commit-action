@@ -33,6 +33,9 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.TREE_ENTRY_CHUNK_SIZE = void 0;
+exports.isBinaryFile = isBinaryFile;
+exports.getFileMode = getFileMode;
 exports.createBlob = createBlob;
 exports.createTree = createTree;
 exports.createCommit = createCommit;
@@ -41,6 +44,37 @@ exports.getBranchInfo = getBranchInfo;
 exports.commitViaAPI = commitViaAPI;
 const github = __importStar(require("@actions/github"));
 const fs = __importStar(require("fs"));
+/** Max tree entries per createTree request (payload / GitHub limits). */
+exports.TREE_ENTRY_CHUNK_SIZE = 100;
+/**
+ * Returns true if the file appears binary (null byte in first 8 KiB), matching Git's heuristic.
+ */
+function isBinaryFile(filePath) {
+    if (!fs.existsSync(filePath)) {
+        throw new Error(`File not found: ${filePath}`);
+    }
+    const stat = fs.statSync(filePath);
+    if (stat.size === 0) {
+        return false;
+    }
+    const toRead = Math.min(8192, stat.size);
+    const buf = Buffer.alloc(toRead);
+    const fd = fs.openSync(filePath, "r");
+    try {
+        fs.readSync(fd, buf, 0, toRead, 0);
+    }
+    finally {
+        fs.closeSync(fd);
+    }
+    return buf.includes(0);
+}
+/**
+ * Git tree file mode from local file permissions.
+ */
+function getFileMode(filePath) {
+    const stats = fs.statSync(filePath);
+    return stats.mode & 0o111 ? "100755" : "100644";
+}
 /**
  * Creates a Git blob for a file via GitHub API
  */
@@ -56,32 +90,68 @@ async function createBlob(octokit, owner, repo, filePath) {
         content: base64Content,
         encoding: "base64",
     });
-    // Determine file mode (100644 for regular files, 100755 for executables)
-    const stats = fs.statSync(filePath);
-    const mode = stats.mode & parseInt("111", 8) ? "100755" : "100644";
+    const mode = getFileMode(filePath);
     return { sha: blob.sha, mode };
 }
 /**
- * Creates a Git tree with updated files via GitHub API
+ * Chains createTree calls when there are many entries (avoids huge payloads).
+ */
+async function createTreeChained(octokit, owner, repo, initialBaseTreeSha, entries) {
+    let baseTreeSha = initialBaseTreeSha;
+    for (let i = 0; i < entries.length; i += exports.TREE_ENTRY_CHUNK_SIZE) {
+        const chunk = entries.slice(i, i + exports.TREE_ENTRY_CHUNK_SIZE);
+        const { data: tree } = await octokit.rest.git.createTree({
+            owner,
+            repo,
+            base_tree: baseTreeSha,
+            tree: chunk,
+        });
+        baseTreeSha = tree.sha;
+    }
+    return baseTreeSha;
+}
+/**
+ * Creates a Git tree with updated files via GitHub API.
+ * Text files use inline `content` (one fewer API call per file). Binary files use createBlob.
  */
 async function createTree(octokit, owner, repo, baseTreeSha, filePaths) {
-    const treeEntries = [];
-    for (const filePath of filePaths) {
-        const { sha, mode } = await createBlob(octokit, owner, repo, filePath);
-        treeEntries.push({
-            path: filePath,
-            mode: mode,
-            type: "blob",
-            sha,
-        });
+    const isBinaryByPath = new Map();
+    const binaryPaths = [];
+    for (const p of filePaths) {
+        const binary = isBinaryFile(p);
+        isBinaryByPath.set(p, binary);
+        if (binary) {
+            binaryPaths.push(p);
+        }
     }
-    const { data: tree } = await octokit.rest.git.createTree({
-        owner,
-        repo,
-        base_tree: baseTreeSha,
-        tree: treeEntries,
+    const blobByPath = new Map();
+    await Promise.all(binaryPaths.map(async (filePath) => {
+        const result = await createBlob(octokit, owner, repo, filePath);
+        blobByPath.set(filePath, result);
+    }));
+    const treeEntries = filePaths.map((filePath) => {
+        if (isBinaryByPath.get(filePath)) {
+            const { sha, mode } = blobByPath.get(filePath);
+            return {
+                path: filePath,
+                mode,
+                type: "blob",
+                sha,
+            };
+        }
+        const content = fs.readFileSync(filePath, "utf-8");
+        const mode = getFileMode(filePath);
+        return {
+            path: filePath,
+            mode,
+            type: "blob",
+            content,
+        };
     });
-    return tree.sha;
+    if (treeEntries.length === 0) {
+        return baseTreeSha;
+    }
+    return createTreeChained(octokit, owner, repo, baseTreeSha, treeEntries);
 }
 /**
  * Creates a commit via GitHub API (automatically signed by GitHub)

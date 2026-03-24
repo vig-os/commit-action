@@ -12,6 +12,15 @@ jest.mock("fs", () => {
         readFileSync: jest.fn(),
         statSync: jest.fn(),
         readdirSync: jest.fn(),
+        /** Used by isBinaryFile — fill read buffer so no spurious NUL bytes from Buffer.alloc */
+        openSync: jest.fn().mockReturnValue(1),
+        readSync: jest.fn((_fd, buf, offset, length) => {
+            const off = offset ?? 0;
+            const len = length ?? buf.length - off;
+            Buffer.alloc(len, 0x61).copy(buf, off);
+            return len;
+        }),
+        closeSync: jest.fn(),
     };
 });
 //# sourceMappingURL=setup.js.map
