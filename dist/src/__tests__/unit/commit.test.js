@@ -90,6 +90,12 @@ describe("commit", () => {
         });
     });
     describe("createTree", () => {
+        it("should return baseTreeSha without calling createTree when filePaths is empty", async () => {
+            const result = await (0, commit_1.createTree)(mockOctokit, "owner", "repo", "base-tree-sha", []);
+            expect(result).toBe("base-tree-sha");
+            expect(mockOctokit.rest.git.createTree).not.toHaveBeenCalled();
+            expect(mockOctokit.rest.git.createBlob).not.toHaveBeenCalled();
+        });
         it("should create a tree with inline content for text files (no createBlob)", async () => {
             const fs = require("fs");
             fs.existsSync = jest.fn().mockReturnValue(true);

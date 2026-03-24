@@ -12,7 +12,7 @@ jest.mock("fs", () => {
         readFileSync: jest.fn(),
         statSync: jest.fn(),
         readdirSync: jest.fn(),
-        /** Used by isBinaryFile — fill read buffer so no spurious NUL bytes from Buffer.alloc */
+        /** Used by isBinaryFile — provides openSync/readSync/closeSync for binary detection tests */
         openSync: jest.fn().mockReturnValue(1),
         readSync: jest.fn((_fd, buf, offset, length) => {
             const off = offset ?? 0;
