@@ -15,7 +15,10 @@ export interface RetryConfig {
 
 /** HTTP-like error shape from Octokit RequestError. */
 function hasStatus(e: unknown): e is { status: number; message?: string } {
-  return typeof e === "object" && e !== null && "status" in e;
+  if (typeof e !== "object" || e === null || !("status" in e)) {
+    return false;
+  }
+  return typeof (e as { status: unknown }).status === "number";
 }
 
 /**
@@ -88,21 +91,25 @@ export async function withRetry<T>(
   const baseDelayMs = config.baseDelayMs ?? DEFAULT_BASE_DELAY_MS;
   const maxDelayMs = config.maxDelayMs ?? DEFAULT_MAX_DELAY_MS;
   const log = logger ?? (() => {});
+  const maxAttempts = Math.max(
+    1,
+    Number.isFinite(config.maxAttempts) ? config.maxAttempts : 1
+  );
 
   let lastError: unknown;
-  for (let attempt = 0; attempt < config.maxAttempts; attempt++) {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
       return await fn();
     } catch (e) {
       lastError = e;
-      const isLast = attempt === config.maxAttempts - 1;
+      const isLast = attempt === maxAttempts - 1;
       if (isLast || !isTransientError(e)) {
         throw e;
       }
       const classification = classifyError(e);
       const delay = calculateDelay(attempt, baseDelayMs, maxDelayMs);
       log(
-        `GitHub API attempt ${attempt + 1}/${config.maxAttempts} failed (${classification}), retrying in ${delay}ms`
+        `GitHub API attempt ${attempt + 1}/${maxAttempts} failed (${classification}), retrying in ${delay}ms`
       );
       await sleep(delay);
     }
