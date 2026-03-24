@@ -24,14 +24,8 @@ export interface CommitResult {
  */
 export const TREE_ENTRY_CHUNK_SIZE = 100;
 
-/**
- * Returns true if the file appears binary (null byte in first 8 KiB), matching Git's heuristic.
- */
-export function isBinaryFile(filePath: string): boolean {
-  if (!fs.existsSync(filePath)) {
-    throw new Error(`File not found: ${filePath}`);
-  }
-  const stat = fs.statSync(filePath);
+/** Returns true if the file appears binary (NUL in first 8 KiB), using pre-fetched stat. */
+function isBinaryFromStat(filePath: string, stat: fs.Stats): boolean {
   if (stat.size === 0) {
     return false;
   }
@@ -51,11 +45,28 @@ export function isBinaryFile(filePath: string): boolean {
 }
 
 /**
+ * Returns true if the file appears binary (null byte in first 8 KiB), matching Git's heuristic.
+ */
+export function isBinaryFile(filePath: string): boolean {
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`File not found: ${filePath}`);
+  }
+  const stat = fs.statSync(filePath);
+  return isBinaryFromStat(filePath, stat);
+}
+
+/**
  * Git tree file mode from local file permissions.
  */
 export function getFileMode(filePath: string): "100644" | "100755" {
   const stats = fs.statSync(filePath);
   return stats.mode & 0o111 ? "100755" : "100644";
+}
+
+/** Options for createBlob. */
+export interface CreateBlobOptions {
+  /** Pre-computed mode from stat; avoids redundant statSync. */
+  mode?: "100644" | "100755";
 }
 
 type TreeBlobEntry =
@@ -79,7 +90,8 @@ export async function createBlob(
   octokit: ReturnType<typeof github.getOctokit>,
   owner: string,
   repo: string,
-  filePath: string
+  filePath: string,
+  options?: CreateBlobOptions
 ): Promise<{ sha: string; mode: "100644" | "100755" }> {
   if (!fs.existsSync(filePath)) {
     throw new Error(`File not found: ${filePath}`);
@@ -95,7 +107,7 @@ export async function createBlob(
     encoding: "base64",
   });
 
-  const mode = getFileMode(filePath);
+  const mode = options?.mode ?? getFileMode(filePath);
 
   return { sha: blob.sha, mode };
 }
