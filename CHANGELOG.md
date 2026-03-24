@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Efficient multi-file commits via GitHub `createTree` **inline `content`** for text files (blobs created server-side), **`createBlob`** only for binary files (NUL detected in the first 8 KiB), and **chained `createTree`** requests in chunks of **`TREE_ENTRY_CHUNK_SIZE` (100)** entries for very large change sets and payload limits (issue #19).
+
+### Changed
+
+- Exported helpers for library use: `isBinaryFile`, `getFileMode`, and `TREE_ENTRY_CHUNK_SIZE` from `commit.ts`.
+
 ## [v0.1.5](https://github.com/vig-os/commit-action/releases/tag/v0.1.5) - 2026-03-13
 
 ### Fixed

@@ -12,6 +12,7 @@ A modular GitHub Action that commits changes via GitHub API, creating automatica
 - **Modular design** - Can be used as a standalone action or imported as a module
 - **Type-safe** - Written in TypeScript with full type safety
 - **Well tested** - Comprehensive unit test coverage
+- **Scalable API usage** - Many text files are committed with far fewer REST calls (inline tree content), which stays friendlier to GitHub App **secondary rate limits**; binary files still use explicit blobs
 
 ## Usage
 
@@ -19,7 +20,7 @@ A modular GitHub Action that commits changes via GitHub API, creating automatica
 
 ```yaml
 - name: Commit and push changes via API
-  uses: vig-os/commit-action@v0.1.4
+  uses: vig-os/commit-action@v0.1.5
   env:
     GITHUB_TOKEN: ${{ steps.sync.outputs.app-token || steps.sync.outputs.github-token }}
     GITHUB_REPOSITORY: ${{ github.repository }}
@@ -84,6 +85,12 @@ Main function to commit changes via GitHub API.
 - `commitSha: string` - SHA of the created commit
 - `treeSha: string` - SHA of the created tree
 - `filesCommitted: number` - Number of files committed
+
+### Other exports (module use)
+
+- `isBinaryFile(path)` — whether a file is treated as binary for the commit path (NUL in first 8 KiB)
+- `getFileMode(path)` — Git tree mode `100644` / `100755` from local permissions
+- `TREE_ENTRY_CHUNK_SIZE` — max tree entries per `createTree` request when batching
 
 ## Development
 
