@@ -705,5 +705,177 @@ describe("commit", () => {
       expect(result.treeSha).toBe("new-tree-sha");
       expect(result.filesCommitted).toBe(1);
     });
+
+    describe("retry behavior", () => {
+      it("with maxAttempts 1 (default) does not retry on 404 from getRef", async () => {
+        mockOctokit.rest.git.getRef.mockRejectedValue({ status: 404 });
+        mockOctokit.rest.git.getCommit.mockResolvedValue({
+          data: { tree: { sha: "base-tree-sha" } },
+        });
+
+        await expect(
+          commitViaAPI({
+            token: "test-token",
+            owner: "owner",
+            repo: "repo",
+            branch: "dev",
+            message: "Test",
+            filePaths: ["x.txt"],
+          })
+        ).rejects.toMatchObject({ status: 404 });
+
+        expect(mockOctokit.rest.git.getRef).toHaveBeenCalledTimes(1);
+      });
+
+      it("with maxAttempts 3 retries transient 404 on getRef and succeeds on second attempt", async () => {
+        const fs = require("fs");
+        fs.existsSync = jest.fn().mockReturnValue(true);
+        fs.readFileSync = jest.fn((path: string, enc?: string) =>
+          enc === "utf-8" ? "x" : Buffer.from("x")
+        );
+        fs.statSync = jest.fn().mockReturnValue({ mode: 0o644, size: 1 });
+
+        mockOctokit.rest.git.getRef
+          .mockRejectedValueOnce({ status: 404 })
+          .mockResolvedValueOnce({
+            data: { object: { sha: "base-sha" } },
+          });
+        mockOctokit.rest.git.getCommit.mockResolvedValue({
+          data: { tree: { sha: "base-tree-sha" } },
+        });
+        mockOctokit.rest.git.createTree.mockResolvedValue({
+          data: { sha: "new-tree-sha" },
+        });
+        mockOctokit.rest.git.createCommit.mockResolvedValue({
+          data: { sha: "commit-sha" },
+        });
+        mockOctokit.rest.git.updateRef.mockResolvedValue({ data: {} });
+
+        const result = await commitViaAPI({
+          token: "test-token",
+          owner: "owner",
+          repo: "repo",
+          branch: "dev",
+          message: "Test",
+          filePaths: ["x.txt"],
+          maxAttempts: 3,
+          baseDelayMs: 1,
+          maxDelayMs: 5,
+        });
+
+        expect(result.commitSha).toBe("commit-sha");
+        expect(mockOctokit.rest.git.getRef).toHaveBeenCalledTimes(2);
+      });
+
+      it("with maxAttempts 2 retries 503 on createCommit and succeeds", async () => {
+        const fs = require("fs");
+        fs.existsSync = jest.fn().mockReturnValue(true);
+        fs.readFileSync = jest.fn((path: string, enc?: string) =>
+          enc === "utf-8" ? "x" : Buffer.from("x")
+        );
+        fs.statSync = jest.fn().mockReturnValue({ mode: 0o644, size: 1 });
+
+        mockOctokit.rest.git.getRef.mockResolvedValue({
+          data: { object: { sha: "base-sha" } },
+        });
+        mockOctokit.rest.git.getCommit.mockResolvedValue({
+          data: { tree: { sha: "base-tree-sha" } },
+        });
+        mockOctokit.rest.git.createTree.mockResolvedValue({
+          data: { sha: "new-tree-sha" },
+        });
+        mockOctokit.rest.git.createCommit
+          .mockRejectedValueOnce({ status: 503 })
+          .mockResolvedValueOnce({ data: { sha: "commit-sha" } });
+        mockOctokit.rest.git.updateRef.mockResolvedValue({ data: {} });
+
+        const result = await commitViaAPI({
+          token: "test-token",
+          owner: "owner",
+          repo: "repo",
+          branch: "dev",
+          message: "Test",
+          filePaths: ["x.txt"],
+          maxAttempts: 2,
+          baseDelayMs: 1,
+          maxDelayMs: 5,
+        });
+
+        expect(result.commitSha).toBe("commit-sha");
+        expect(mockOctokit.rest.git.createCommit).toHaveBeenCalledTimes(2);
+      });
+
+      it("exhausts attempts and surfaces original error", async () => {
+        const fs = require("fs");
+        fs.existsSync = jest.fn().mockReturnValue(true);
+        fs.readFileSync = jest.fn((path: string, enc?: string) =>
+          enc === "utf-8" ? "x" : Buffer.from("x")
+        );
+        fs.statSync = jest.fn().mockReturnValue({ mode: 0o644, size: 1 });
+
+        mockOctokit.rest.git.getRef.mockRejectedValue({ status: 404 });
+        mockOctokit.rest.git.getCommit.mockResolvedValue({
+          data: { tree: { sha: "base-tree-sha" } },
+        });
+
+        await expect(
+          commitViaAPI({
+            token: "test-token",
+            owner: "owner",
+            repo: "repo",
+            branch: "dev",
+            message: "Test",
+            filePaths: ["x.txt"],
+            maxAttempts: 2,
+            baseDelayMs: 1,
+            maxDelayMs: 5,
+          })
+        ).rejects.toMatchObject({ status: 404 });
+
+        expect(mockOctokit.rest.git.getRef).toHaveBeenCalledTimes(2);
+      });
+
+      it("calls logger on retry", async () => {
+        const logger = jest.fn();
+        const fs = require("fs");
+        fs.existsSync = jest.fn().mockReturnValue(true);
+        fs.readFileSync = jest.fn((path: string, enc?: string) =>
+          enc === "utf-8" ? "x" : Buffer.from("x")
+        );
+        fs.statSync = jest.fn().mockReturnValue({ mode: 0o644, size: 1 });
+
+        mockOctokit.rest.git.getRef
+          .mockRejectedValueOnce({ status: 404 })
+          .mockResolvedValueOnce({
+            data: { object: { sha: "base-sha" } },
+          });
+        mockOctokit.rest.git.getCommit.mockResolvedValue({
+          data: { tree: { sha: "base-tree-sha" } },
+        });
+        mockOctokit.rest.git.createTree.mockResolvedValue({
+          data: { sha: "new-tree-sha" },
+        });
+        mockOctokit.rest.git.createCommit.mockResolvedValue({
+          data: { sha: "commit-sha" },
+        });
+        mockOctokit.rest.git.updateRef.mockResolvedValue({ data: {} });
+
+        await commitViaAPI({
+          token: "test-token",
+          owner: "owner",
+          repo: "repo",
+          branch: "dev",
+          message: "Test",
+          filePaths: ["x.txt"],
+          maxAttempts: 3,
+          baseDelayMs: 1,
+          maxDelayMs: 5,
+          logger,
+        });
+
+        expect(logger).toHaveBeenCalled();
+        expect(logger.mock.calls[0][0]).toMatch(/attempt|404|retry/i);
+      });
+    });
   });
 });

@@ -35258,6 +35258,7 @@ function wrappy (fn, cb) {
  * - COMMIT_MESSAGE: Commit message
  * - FILE_PATHS: Comma-separated list of file paths to commit (or read from git status)
  * - ALLOW_EMPTY: Set to "true" to allow empty commits when no files changed (default: false)
+ * - MAX_ATTEMPTS: Max retry attempts for transient API failures (default: 1 = no retries)
  */
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -35453,6 +35454,21 @@ async function main() {
         core.info(`Files: ${filePaths.join(", ")}`);
         // Get base SHA if provided (for testing or specific use cases)
         const baseSha = process.env.BASE_SHA;
+        // Parse MAX_ATTEMPTS for retry (default 1 = no retries)
+        let maxAttempts = 1;
+        const rawAttempts = process.env.MAX_ATTEMPTS;
+        if (rawAttempts) {
+            const parsed = parseInt(rawAttempts, 10);
+            if (Number.isNaN(parsed) || parsed < 1) {
+                core.info(`MAX_ATTEMPTS="${rawAttempts}" invalid, using 1 (no retries)`);
+            }
+            else {
+                maxAttempts = parsed;
+                if (maxAttempts > 1) {
+                    core.info(`API retries enabled: max ${maxAttempts} attempts`);
+                }
+            }
+        }
         // Commit changes via API
         const result = await (0, commit_1.commitViaAPI)({
             token,
@@ -35463,6 +35479,8 @@ async function main() {
             filePaths,
             allowEmpty,
             baseSha,
+            maxAttempts,
+            logger: core.info,
         });
         core.info(`Created signed commit ${result.commitSha} via GitHub API`);
         core.setOutput("commit-sha", result.commitSha);
@@ -35537,6 +35555,7 @@ exports.getBranchInfo = getBranchInfo;
 exports.commitViaAPI = commitViaAPI;
 const github = __importStar(__nccwpck_require__(3228));
 const fs = __importStar(__nccwpck_require__(9896));
+const retry_1 = __nccwpck_require__(9809);
 /**
  * Max tree entries per createTree request. Keeps payloads comfortably under
  * GitHub's ~25 MB request body limit and avoids slow single-call responses.
@@ -35645,18 +35664,12 @@ async function createTree(octokit, owner, repo, baseTreeSha, filePaths) {
             });
         }
         catch {
-            const base64Content = raw.toString("base64");
-            const { data: blob } = await octokit.rest.git.createBlob({
-                owner,
-                repo,
-                content: base64Content,
-                encoding: "base64",
-            });
+            const result = await createBlob(octokit, owner, repo, filePath, { mode });
             treeEntries.push({
                 path: filePath,
-                mode,
+                mode: result.mode,
                 type: "blob",
-                sha: blob.sha,
+                sha: result.sha,
             });
         }
     }
@@ -35714,43 +35727,159 @@ async function getBranchInfo(octokit, owner, repo, branch) {
  * This is designed to be modular and reusable - can be used as a standalone action
  */
 async function commitViaAPI(options) {
-    const { token, owner, repo, branch, message, filePaths, allowEmpty, baseSha } = options;
+    const { token, owner, repo, branch, message, filePaths, allowEmpty, baseSha, maxAttempts = 1, logger, baseDelayMs, maxDelayMs, } = options;
     if (filePaths.length === 0 && !allowEmpty) {
         throw new Error("No files to commit");
     }
     const octokit = github.getOctokit(token);
+    const retryConfig = {
+        maxAttempts,
+        ...(baseDelayMs !== undefined && { baseDelayMs }),
+        ...(maxDelayMs !== undefined && { maxDelayMs }),
+    };
+    const log = logger ?? console.info;
     // Get branch info (SHA and tree SHA)
     let branchSha;
     let baseTreeSha;
     if (baseSha) {
         // Use provided base SHA
         branchSha = baseSha;
-        const { data: commit } = await octokit.rest.git.getCommit({
+        const { data: commit } = await (0, retry_1.withRetry)(() => octokit.rest.git.getCommit({
             owner,
             repo,
             commit_sha: baseSha,
-        });
+        }), retryConfig, log);
         baseTreeSha = commit.tree.sha;
     }
     else {
         // Fetch from branch
-        const branchInfo = await getBranchInfo(octokit, owner, repo, branch);
+        const branchInfo = await (0, retry_1.withRetry)(() => getBranchInfo(octokit, owner, repo, branch), retryConfig, log);
         branchSha = branchInfo.sha;
         baseTreeSha = branchInfo.treeSha;
     }
     // For empty commits, reuse parent tree SHA; otherwise create a new tree.
     const newTreeSha = filePaths.length === 0
         ? baseTreeSha
-        : await createTree(octokit, owner, repo, baseTreeSha, filePaths);
+        : await (0, retry_1.withRetry)(() => createTree(octokit, owner, repo, baseTreeSha, filePaths), retryConfig, log);
     // Create commit (automatically signed by GitHub)
-    const commitSha = await createCommit(octokit, owner, repo, newTreeSha, branchSha, message);
+    const commitSha = await (0, retry_1.withRetry)(() => createCommit(octokit, owner, repo, newTreeSha, branchSha, message), retryConfig, log);
     // Update branch reference
-    await updateBranch(octokit, owner, repo, branch, commitSha, false);
+    await (0, retry_1.withRetry)(() => updateBranch(octokit, owner, repo, branch, commitSha, false), retryConfig, log);
     return {
         commitSha,
         treeSha: newTreeSha,
         filesCommitted: filePaths.length,
     };
+}
+
+
+/***/ }),
+
+/***/ 9809:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.DEFAULT_MAX_DELAY_MS = exports.DEFAULT_BASE_DELAY_MS = exports.DEFAULT_MAX_ATTEMPTS = void 0;
+exports.isTransientError = isTransientError;
+exports.classifyError = classifyError;
+exports.calculateDelay = calculateDelay;
+exports.withRetry = withRetry;
+/** Default max attempts (1 = no retries, backward compatible). */
+exports.DEFAULT_MAX_ATTEMPTS = 1;
+/** Default base delay for exponential backoff, in milliseconds. */
+exports.DEFAULT_BASE_DELAY_MS = 1000;
+/** Default maximum delay cap for backoff, in milliseconds. */
+exports.DEFAULT_MAX_DELAY_MS = 30000;
+/** HTTP-like error shape from Octokit RequestError. */
+function hasStatus(e) {
+    if (typeof e !== "object" || e === null || !("status" in e)) {
+        return false;
+    }
+    return typeof e.status === "number";
+}
+/**
+ * Returns true if the error is a transient condition worth retrying:
+ * - 404 (transient ref/commit lookup)
+ * - 5xx (server error)
+ * - 429 (primary rate limit)
+ * - 403 with rate limit / secondary rate limit / abuse in message
+ */
+function isTransientError(error) {
+    if (!hasStatus(error))
+        return false;
+    const { status, message = "" } = error;
+    const msg = message.toLowerCase();
+    if (status === 404)
+        return true;
+    if (status >= 500 && status < 600)
+        return true;
+    if (status === 429)
+        return true;
+    if (status === 403) {
+        return (msg.includes("rate limit") ||
+            msg.includes("secondary rate limit") ||
+            msg.includes("abuse"));
+    }
+    return false;
+}
+/** Human-readable classification for logging. */
+function classifyError(error) {
+    if (!hasStatus(error))
+        return "non-transient";
+    const { status, message = "" } = error;
+    const msg = message.toLowerCase();
+    if (status === 404)
+        return "HTTP 404 (transient)";
+    if (status >= 500 && status < 600)
+        return `HTTP ${status} (server error)`;
+    if (status === 429)
+        return "HTTP 429 (rate limit)";
+    if (status === 403 && (msg.includes("rate limit") || msg.includes("abuse"))) {
+        return "rate limit (403)";
+    }
+    return "non-transient";
+}
+/**
+ * Exponential backoff with jitter.
+ * Delay = min(base * 2^attempt, maxDelayMs) + jitter (0-25% of computed).
+ */
+function calculateDelay(attempt, baseDelayMs, maxDelayMs) {
+    const raw = Math.min(baseDelayMs * Math.pow(2, attempt), maxDelayMs);
+    const jitter = raw * 0.25 * Math.random();
+    return Math.floor(raw + jitter);
+}
+function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+/**
+ * Retries an async operation on transient errors only.
+ * Logs attempt number, classification, and delay via logger when retrying.
+ */
+async function withRetry(fn, config, logger) {
+    const baseDelayMs = config.baseDelayMs ?? exports.DEFAULT_BASE_DELAY_MS;
+    const maxDelayMs = config.maxDelayMs ?? exports.DEFAULT_MAX_DELAY_MS;
+    const log = logger ?? (() => { });
+    const maxAttempts = Math.max(1, Number.isFinite(config.maxAttempts) ? config.maxAttempts : 1);
+    let lastError;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        try {
+            return await fn();
+        }
+        catch (e) {
+            lastError = e;
+            const isLast = attempt === maxAttempts - 1;
+            if (isLast || !isTransientError(e)) {
+                throw e;
+            }
+            const classification = classifyError(e);
+            const delay = calculateDelay(attempt, baseDelayMs, maxDelayMs);
+            log(`GitHub API attempt ${attempt + 1}/${maxAttempts} failed (${classification}), retrying in ${delay}ms`);
+            await sleep(delay);
+        }
+    }
+    throw lastError;
 }
 
 
