@@ -14,6 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Exported helpers for library use: `isBinaryFile`, `getFileMode`, and `TREE_ENTRY_CHUNK_SIZE` from `commit.ts`.
+- Binary blob creation is now sequential instead of concurrent to avoid secondary rate-limit bursts.
+
+### Fixed
+
+- `isBinaryFile` false positives when `readSync` returns fewer bytes than requested (zero-filled buffer tail).
+- Silent data corruption for non-UTF-8 text files by validating with `TextDecoder({ fatal: true })` and falling back to `createBlob`.
 
 ## [v0.1.5](https://github.com/vig-os/commit-action/releases/tag/v0.1.5) - 2026-03-13
 
