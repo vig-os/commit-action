@@ -153,18 +153,12 @@ async function createTree(octokit, owner, repo, baseTreeSha, filePaths) {
             });
         }
         catch {
-            const base64Content = raw.toString("base64");
-            const { data: blob } = await octokit.rest.git.createBlob({
-                owner,
-                repo,
-                content: base64Content,
-                encoding: "base64",
-            });
+            const result = await createBlob(octokit, owner, repo, filePath, { mode });
             treeEntries.push({
                 path: filePath,
-                mode,
+                mode: result.mode,
                 type: "blob",
-                sha: blob.sha,
+                sha: result.sha,
             });
         }
     }

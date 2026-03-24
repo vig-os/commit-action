@@ -35664,18 +35664,12 @@ async function createTree(octokit, owner, repo, baseTreeSha, filePaths) {
             });
         }
         catch {
-            const base64Content = raw.toString("base64");
-            const { data: blob } = await octokit.rest.git.createBlob({
-                owner,
-                repo,
-                content: base64Content,
-                encoding: "base64",
-            });
+            const result = await createBlob(octokit, owner, repo, filePath, { mode });
             treeEntries.push({
                 path: filePath,
-                mode,
+                mode: result.mode,
                 type: "blob",
-                sha: blob.sha,
+                sha: result.sha,
             });
         }
     }
@@ -35800,7 +35794,10 @@ exports.DEFAULT_BASE_DELAY_MS = 1000;
 exports.DEFAULT_MAX_DELAY_MS = 30000;
 /** HTTP-like error shape from Octokit RequestError. */
 function hasStatus(e) {
-    return typeof e === "object" && e !== null && "status" in e;
+    if (typeof e !== "object" || e === null || !("status" in e)) {
+        return false;
+    }
+    return typeof e.status === "number";
 }
 /**
  * Returns true if the error is a transient condition worth retrying:
@@ -35864,20 +35861,21 @@ async function withRetry(fn, config, logger) {
     const baseDelayMs = config.baseDelayMs ?? exports.DEFAULT_BASE_DELAY_MS;
     const maxDelayMs = config.maxDelayMs ?? exports.DEFAULT_MAX_DELAY_MS;
     const log = logger ?? (() => { });
+    const maxAttempts = Math.max(1, Number.isFinite(config.maxAttempts) ? config.maxAttempts : 1);
     let lastError;
-    for (let attempt = 0; attempt < config.maxAttempts; attempt++) {
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
         try {
             return await fn();
         }
         catch (e) {
             lastError = e;
-            const isLast = attempt === config.maxAttempts - 1;
+            const isLast = attempt === maxAttempts - 1;
             if (isLast || !isTransientError(e)) {
                 throw e;
             }
             const classification = classifyError(e);
             const delay = calculateDelay(attempt, baseDelayMs, maxDelayMs);
-            log(`GitHub API attempt ${attempt + 1}/${config.maxAttempts} failed (${classification}), retrying in ${delay}ms`);
+            log(`GitHub API attempt ${attempt + 1}/${maxAttempts} failed (${classification}), retrying in ${delay}ms`);
             await sleep(delay);
         }
     }

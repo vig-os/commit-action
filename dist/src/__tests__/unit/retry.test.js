@@ -28,6 +28,10 @@ describe("retry", () => {
         it("returns false for generic Error with no status", () => {
             expect((0, retry_1.isTransientError)(new Error("something broke"))).toBe(false);
         });
+        it("returns false when status is not a number", () => {
+            expect((0, retry_1.isTransientError)({ status: "404" })).toBe(false);
+            expect((0, retry_1.isTransientError)({ status: null })).toBe(false);
+        });
     });
     describe("classifyError", () => {
         it("returns descriptive string for 404", () => {
@@ -79,6 +83,18 @@ describe("retry", () => {
                 status: 404,
             });
             expect(fn).toHaveBeenCalledTimes(1);
+        });
+        it("treats maxAttempts 0 or negative as 1 (single attempt)", async () => {
+            const fn404 = jest.fn().mockRejectedValue({ status: 404 });
+            await expect((0, retry_1.withRetry)(fn404, { maxAttempts: 0 })).rejects.toEqual({
+                status: 404,
+            });
+            expect(fn404).toHaveBeenCalledTimes(1);
+            const fn503 = jest.fn().mockRejectedValue({ status: 503 });
+            await expect((0, retry_1.withRetry)(fn503, { maxAttempts: -1 })).rejects.toMatchObject({
+                status: 503,
+            });
+            expect(fn503).toHaveBeenCalledTimes(1);
         });
         it("retries transient errors up to maxAttempts and succeeds on later attempt", async () => {
             const fn = jest
