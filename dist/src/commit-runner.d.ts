@@ -9,6 +9,7 @@
  * - COMMIT_MESSAGE: Commit message
  * - FILE_PATHS: Comma-separated list of file paths to commit (or read from git status)
  * - ALLOW_EMPTY: Set to "true" to allow empty commits when no files changed (default: false)
+ * - MAX_ATTEMPTS: Max retry attempts for transient API failures (default: 1 = no retries)
  */
 /**
  * Normalizes a Git reference to a branch name

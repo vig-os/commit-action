@@ -8,6 +8,14 @@ export interface CommitOptions {
     filePaths: string[];
     allowEmpty?: boolean;
     baseSha?: string;
+    /** Max API attempt count (default 1 = no retries). */
+    maxAttempts?: number;
+    /** Logger for retry messages (default: console.info). */
+    logger?: (msg: string) => void;
+    /** Base delay in ms for retry backoff (test tuning). */
+    baseDelayMs?: number;
+    /** Max delay cap in ms for retry backoff (test tuning). */
+    maxDelayMs?: number;
 }
 export interface CommitResult {
     commitSha: string;

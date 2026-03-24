@@ -44,6 +44,7 @@ exports.getBranchInfo = getBranchInfo;
 exports.commitViaAPI = commitViaAPI;
 const github = __importStar(require("@actions/github"));
 const fs = __importStar(require("fs"));
+const retry_1 = require("./retry");
 /**
  * Max tree entries per createTree request. Keeps payloads comfortably under
  * GitHub's ~25 MB request body limit and avoids slow single-call responses.
@@ -221,38 +222,44 @@ async function getBranchInfo(octokit, owner, repo, branch) {
  * This is designed to be modular and reusable - can be used as a standalone action
  */
 async function commitViaAPI(options) {
-    const { token, owner, repo, branch, message, filePaths, allowEmpty, baseSha } = options;
+    const { token, owner, repo, branch, message, filePaths, allowEmpty, baseSha, maxAttempts = 1, logger, baseDelayMs, maxDelayMs, } = options;
     if (filePaths.length === 0 && !allowEmpty) {
         throw new Error("No files to commit");
     }
     const octokit = github.getOctokit(token);
+    const retryConfig = {
+        maxAttempts,
+        ...(baseDelayMs !== undefined && { baseDelayMs }),
+        ...(maxDelayMs !== undefined && { maxDelayMs }),
+    };
+    const log = logger ?? console.info;
     // Get branch info (SHA and tree SHA)
     let branchSha;
     let baseTreeSha;
     if (baseSha) {
         // Use provided base SHA
         branchSha = baseSha;
-        const { data: commit } = await octokit.rest.git.getCommit({
+        const { data: commit } = await (0, retry_1.withRetry)(() => octokit.rest.git.getCommit({
             owner,
             repo,
             commit_sha: baseSha,
-        });
+        }), retryConfig, log);
         baseTreeSha = commit.tree.sha;
     }
     else {
         // Fetch from branch
-        const branchInfo = await getBranchInfo(octokit, owner, repo, branch);
+        const branchInfo = await (0, retry_1.withRetry)(() => getBranchInfo(octokit, owner, repo, branch), retryConfig, log);
         branchSha = branchInfo.sha;
         baseTreeSha = branchInfo.treeSha;
     }
     // For empty commits, reuse parent tree SHA; otherwise create a new tree.
     const newTreeSha = filePaths.length === 0
         ? baseTreeSha
-        : await createTree(octokit, owner, repo, baseTreeSha, filePaths);
+        : await (0, retry_1.withRetry)(() => createTree(octokit, owner, repo, baseTreeSha, filePaths), retryConfig, log);
     // Create commit (automatically signed by GitHub)
-    const commitSha = await createCommit(octokit, owner, repo, newTreeSha, branchSha, message);
+    const commitSha = await (0, retry_1.withRetry)(() => createCommit(octokit, owner, repo, newTreeSha, branchSha, message), retryConfig, log);
     // Update branch reference
-    await updateBranch(octokit, owner, repo, branch, commitSha, false);
+    await (0, retry_1.withRetry)(() => updateBranch(octokit, owner, repo, branch, commitSha, false), retryConfig, log);
     return {
         commitSha,
         treeSha: newTreeSha,

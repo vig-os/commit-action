@@ -11,6 +11,7 @@
  * - COMMIT_MESSAGE: Commit message
  * - FILE_PATHS: Comma-separated list of file paths to commit (or read from git status)
  * - ALLOW_EMPTY: Set to "true" to allow empty commits when no files changed (default: false)
+ * - MAX_ATTEMPTS: Max retry attempts for transient API failures (default: 1 = no retries)
  */
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -206,6 +207,21 @@ async function main() {
         core.info(`Files: ${filePaths.join(", ")}`);
         // Get base SHA if provided (for testing or specific use cases)
         const baseSha = process.env.BASE_SHA;
+        // Parse MAX_ATTEMPTS for retry (default 1 = no retries)
+        let maxAttempts = 1;
+        const rawAttempts = process.env.MAX_ATTEMPTS;
+        if (rawAttempts) {
+            const parsed = parseInt(rawAttempts, 10);
+            if (Number.isNaN(parsed) || parsed < 1) {
+                core.info(`MAX_ATTEMPTS="${rawAttempts}" invalid, using 1 (no retries)`);
+            }
+            else {
+                maxAttempts = parsed;
+                if (maxAttempts > 1) {
+                    core.info(`API retries enabled: max ${maxAttempts} attempts`);
+                }
+            }
+        }
         // Commit changes via API
         const result = await (0, commit_1.commitViaAPI)({
             token,
@@ -216,6 +232,8 @@ async function main() {
             filePaths,
             allowEmpty,
             baseSha,
+            maxAttempts,
+            logger: core.info,
         });
         core.info(`Created signed commit ${result.commitSha} via GitHub API`);
         core.setOutput("commit-sha", result.commitSha);
