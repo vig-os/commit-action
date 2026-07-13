@@ -1,0 +1,198 @@
+# CI Workflow (mode-aware)
+#
+# One workflow for every DEVKIT_MODE. Toolchain provisioning is split from image
+# selection per docs/rfcs/ADR-conditional-container-toolchain.md (Option A,
+# #991): a leading `resolve-toolchain` job reads `.vig-os` and outputs the
+# delivery `mode` and container `image` — the devcontainer image for the
+# container-ish modes, an EXPLICIT EMPTY STRING for direnv/bare (which makes the
+# downstream job run directly on the host runner). Every job then declares
+# `container: image: ${{ needs.resolve-toolchain.outputs.image }}` — inert on the
+# host when the image is empty (proven by the #992 spike) — and calls the shared
+# `setup-devkit-toolchain` composite as its first step to provision the toolchain
+# for its mode (in-image env for container, the Nix flake dev-shell for direnv,
+# a uv host install for bare). After that preamble, plain
+# `just sync|precommit|test` runs identically in every mode.
+#
+# This collapses the former per-mode ci.yml overlays (container / direnv / bare)
+# into a single managed file (#991).
+#
+# Jobs:
+#   1. resolve-toolchain — Resolve delivery mode + image from .vig-os
+#   2. lint              — Pre-commit hooks
+#   3. test              — Pytest
+#   4. summary           — Aggregate results for branch protection
+#
+# Triggers:
+#   - Pull requests to dev, release/**, and main
+#   - Manual workflow_dispatch
+#
+
+name: CI
+
+on:  # yamllint disable-line rule:truthy
+  pull_request:
+    branches:
+      - dev
+      - 'release/**'
+      - main
+  workflow_dispatch:
+    inputs:
+      test-suite:
+        description: 'Test suite to run'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - lint
+          - test
+      image-tag:
+        description: 'Container image tag to use'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  resolve-toolchain:
+    name: Resolve toolchain
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    outputs:
+      mode: ${{ steps.resolve.outputs.mode }}
+      image: ${{ steps.resolve.outputs.image }}
+      image-tag: ${{ steps.resolve.outputs.image-tag }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          sparse-checkout: |
+            .vig-os
+            .github/actions/resolve-toolchain
+          sparse-checkout-cone-mode: false
+
+      - name: Resolve toolchain
+        id: resolve
+        uses: ./.github/actions/resolve-toolchain
+        with:
+          registry-token: ${{ secrets.GHCR_PULL_TOKEN || github.token }}
+          registry-username: ${{ github.actor }}
+          image-tag: ${{ inputs.image-tag }}
+
+  lint:
+    name: Lint & Format
+    needs: [resolve-toolchain]
+    runs-on: ubuntu-24.04
+    # Empty image (direnv/bare) => runs on the host; non-empty => in-container.
+    # The credentials block is inert on the host (proven by the #992 spike).
+    container:
+      image: ${{ needs.resolve-toolchain.outputs.image }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GHCR_PULL_TOKEN || github.token }}
+    timeout-minutes: 15
+    if: |
+      github.event_name != 'workflow_dispatch' ||
+      inputs.test-suite == 'all' ||
+      inputs.test-suite == 'lint'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+
+      # Mode-aware preamble: exports the in-image env + prek skew guard in
+      # container mode, provisions the Nix dev-shell (direnv) or the uv host
+      # toolchain (bare) otherwise. After this, `just` works in every mode.
+      - name: Set up devkit toolchain
+        uses: ./.github/actions/setup-devkit-toolchain
+        with:
+          mode: ${{ needs.resolve-toolchain.outputs.mode }}
+          devkit-version: ${{ needs.resolve-toolchain.outputs.image-tag }}
+          cachix-cache: ${{ vars.CACHIX_CACHE }}
+          cachix-auth-token: ${{ secrets.CACHIX_AUTH_TOKEN }}
+
+      - name: Sync project dependencies
+        run: just sync
+
+      - name: Run pre-commit hooks
+        run: just precommit
+
+  test:
+    name: Tests
+    needs: [resolve-toolchain]
+    runs-on: ubuntu-24.04
+    container:
+      image: ${{ needs.resolve-toolchain.outputs.image }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GHCR_PULL_TOKEN || github.token }}
+    timeout-minutes: 20
+    if: |
+      github.event_name != 'workflow_dispatch' ||
+      inputs.test-suite == 'all' ||
+      inputs.test-suite == 'test'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+
+      - name: Set up devkit toolchain
+        uses: ./.github/actions/setup-devkit-toolchain
+        with:
+          mode: ${{ needs.resolve-toolchain.outputs.mode }}
+          devkit-version: ${{ needs.resolve-toolchain.outputs.image-tag }}
+          cachix-cache: ${{ vars.CACHIX_CACHE }}
+          cachix-auth-token: ${{ secrets.CACHIX_AUTH_TOKEN }}
+
+      - name: Sync project dependencies
+        run: just sync
+
+      - name: Run tests
+        run: just test
+
+  summary:
+    name: CI Summary
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    needs: [resolve-toolchain, lint, test]
+    if: always()
+
+    steps:
+      - name: Check results
+        run: |
+          echo "CI Results Summary"
+          echo "==================="
+          echo ""
+          echo "Resolve toolchain: ${{ needs.resolve-toolchain.result }}"
+          echo "Lint: ${{ needs.lint.result }}"
+          echo "Test: ${{ needs.test.result }}"
+          echo ""
+
+          FAILED=false
+
+          if [ "${{ needs.resolve-toolchain.result }}" = "failure" ] || [ "${{ needs.resolve-toolchain.result }}" = "cancelled" ]; then
+            echo "ERROR: Toolchain resolution failed"
+            FAILED=true
+          fi
+
+          if [ "${{ needs.lint.result }}" = "failure" ]; then
+            echo "ERROR: Lint checks failed"
+            FAILED=true
+          fi
+
+          if [ "${{ needs.test.result }}" = "failure" ]; then
+            echo "ERROR: Tests failed"
+            FAILED=true
+          fi
+
+          if [ "$FAILED" = "true" ]; then
+            echo ""
+            echo "One or more checks failed"
+            exit 1
+          fi
+
+          echo ""
+          echo "All executed checks passed"

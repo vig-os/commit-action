@@ -11,5 +11,5 @@ if [ "${IN_CONTAINER:-}" != "true" ] && [ -z "${IN_NIX_SHELL:-}" ]; then
 	exit 1
 fi
 
-# Run pre-commit hooks
-prek run
+# Run pre-commit commit-msg hooks (validates commit message format)
+prek run --hook-stage commit-msg --commit-msg-filename "$1"
