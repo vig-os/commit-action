@@ -38,6 +38,21 @@ export interface CommitResult {
  */
 export declare const TREE_ENTRY_CHUNK_SIZE = 100;
 /**
+ * Approximate serialized-byte budget per createTree request. A chunk starts a
+ * new request once adding an entry would exceed this. Kept conservatively well
+ * under GitHub's ~100 MB request body limit so many large inline text files do
+ * not produce an oversized payload. The count cap (TREE_ENTRY_CHUNK_SIZE) and
+ * this byte cap apply together — whichever is hit first ends the chunk.
+ */
+export declare const TREE_ENTRY_BYTE_LIMIT: number;
+/**
+ * Per-file size threshold (bytes) above which a text file's content is uploaded
+ * via createBlob (base64) instead of inlined into the createTree payload. Large
+ * inline content is the main driver of oversized requests; routing big files
+ * through a dedicated blob keeps the tree request small.
+ */
+export declare const INLINE_CONTENT_SIZE_LIMIT: number;
+/**
  * Returns true if the file appears binary (null byte in first 8 KiB), matching Git's heuristic.
  */
 export declare function isBinaryFile(filePath: string): boolean;

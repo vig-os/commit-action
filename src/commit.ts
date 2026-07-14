@@ -57,6 +57,23 @@ export interface CommitResult {
  */
 export const TREE_ENTRY_CHUNK_SIZE = 100;
 
+/**
+ * Approximate serialized-byte budget per createTree request. A chunk starts a
+ * new request once adding an entry would exceed this. Kept conservatively well
+ * under GitHub's ~100 MB request body limit so many large inline text files do
+ * not produce an oversized payload. The count cap (TREE_ENTRY_CHUNK_SIZE) and
+ * this byte cap apply together — whichever is hit first ends the chunk.
+ */
+export const TREE_ENTRY_BYTE_LIMIT = 6 * 1024 * 1024;
+
+/**
+ * Per-file size threshold (bytes) above which a text file's content is uploaded
+ * via createBlob (base64) instead of inlined into the createTree payload. Large
+ * inline content is the main driver of oversized requests; routing big files
+ * through a dedicated blob keeps the tree request small.
+ */
+export const INLINE_CONTENT_SIZE_LIMIT = 1024 * 1024;
+
 /** Returns true if the file appears binary (NUL in first 8 KiB), using pre-fetched stat. */
 function isBinaryFromStat(filePath: string, stat: fs.Stats): boolean {
   if (stat.size === 0) {
@@ -151,7 +168,26 @@ export async function createBlob(
 }
 
 /**
+ * Approximate serialized (UTF-8 JSON) byte size of a tree entry. Inline text
+ * entries are dominated by their `content`; blob-sha entries are tiny. A fixed
+ * overhead covers the surrounding JSON keys/quotes/braces so the estimate is a
+ * safe over-approximation rather than an exact serialization.
+ */
+function estimateEntrySize(entry: TreeBlobEntry): number {
+  const overhead = 64;
+  const pathSize = Buffer.byteLength(entry.path, "utf-8");
+  const payloadSize =
+    "content" in entry
+      ? Buffer.byteLength(entry.content, "utf-8")
+      : Buffer.byteLength(entry.sha, "utf-8");
+  return overhead + pathSize + payloadSize;
+}
+
+/**
  * Chains createTree calls when there are many entries (avoids huge payloads).
+ * A new chunk begins whenever adding the next entry would exceed either the
+ * entry-count cap (TREE_ENTRY_CHUNK_SIZE) or the approximate byte budget
+ * (TREE_ENTRY_BYTE_LIMIT); whichever limit is reached first wins.
  */
 async function createTreeChained(
   octokit: ReturnType<typeof github.getOctokit>,
@@ -162,8 +198,13 @@ async function createTreeChained(
   retry?: RetryOptions
 ): Promise<string> {
   let baseTreeSha = initialBaseTreeSha;
-  for (let i = 0; i < entries.length; i += TREE_ENTRY_CHUNK_SIZE) {
-    const chunk = entries.slice(i, i + TREE_ENTRY_CHUNK_SIZE);
+  let chunk: TreeBlobEntry[] = [];
+  let chunkBytes = 0;
+
+  const flush = async (): Promise<void> => {
+    if (chunk.length === 0) {
+      return;
+    }
     const { data: tree } = await callWithRetry(
       () =>
         octokit.rest.git.createTree({
@@ -175,7 +216,26 @@ async function createTreeChained(
       retry
     );
     baseTreeSha = tree.sha;
+    chunk = [];
+    chunkBytes = 0;
+  };
+
+  for (const entry of entries) {
+    const entrySize = estimateEntrySize(entry);
+    // Start a new chunk if the current one is full by count, or if adding this
+    // entry would push it past the byte budget (unless the chunk is empty, so a
+    // single oversized entry still makes progress).
+    if (
+      chunk.length >= TREE_ENTRY_CHUNK_SIZE ||
+      (chunk.length > 0 && chunkBytes + entrySize > TREE_ENTRY_BYTE_LIMIT)
+    ) {
+      await flush();
+    }
+    chunk.push(entry);
+    chunkBytes += entrySize;
   }
+  await flush();
+
   return baseTreeSha;
 }
 
@@ -200,6 +260,26 @@ export async function createTree(
     const isBinary = isBinaryFromStat(filePath, stat);
 
     if (isBinary) {
+      const result = await createBlob(
+        octokit,
+        owner,
+        repo,
+        filePath,
+        { mode },
+        retry
+      );
+      treeEntries.push({
+        path: filePath,
+        mode: result.mode,
+        type: "blob" as const,
+        sha: result.sha,
+      });
+      continue;
+    }
+
+    // Large text files are routed through createBlob (base64) rather than
+    // inlined, to keep the createTree request body from growing unbounded.
+    if (stat.size > INLINE_CONTENT_SIZE_LIMIT) {
       const result = await createBlob(
         octokit,
         owner,

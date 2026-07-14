@@ -268,6 +268,79 @@ describe("commit", () => {
             expect(mockOctokit.rest.git.createTree.mock.calls[2][0].tree).toHaveLength(1);
             expect(mockOctokit.rest.git.createBlob).not.toHaveBeenCalled();
         });
+        it("should start a new chunk on byte budget before the count limit is reached", async () => {
+            const fs = require("fs");
+            // Each file's inline content is 2.5 MB, so 2 fit under TREE_ENTRY_BYTE_LIMIT
+            // (6 MB) and the 3rd tips it over: 2 entries per chunk, well below the
+            // count cap of 100. 4 files => two chunks of 2.
+            const perFileBytes = Math.floor(2.5 * 1024 * 1024);
+            const bigContent = "a".repeat(perFileBytes);
+            const paths = Array.from({ length: 4 }, (_, i) => `big${i}.txt`);
+            fs.existsSync = jest.fn().mockReturnValue(true);
+            // Keep stat.size just under INLINE_CONTENT_SIZE_LIMIT so files stay inline
+            // (a size over the limit would route them through createBlob). The chunker
+            // measures the actual serialized content bytes, not stat.size, so the
+            // large content still drives the byte-budget split.
+            fs.statSync = jest
+                .fn()
+                .mockReturnValue({ mode: 0o644, size: commit_1.INLINE_CONTENT_SIZE_LIMIT - 1 });
+            fs.readFileSync = jest.fn((path, enc) => {
+                if (enc === "utf-8") {
+                    return bigContent;
+                }
+                return Buffer.from(bigContent);
+            });
+            mockOctokit.rest.git.createTree
+                .mockResolvedValueOnce({ data: { sha: "byte-chunk-1" } })
+                .mockResolvedValueOnce({ data: { sha: "byte-chunk-2" } });
+            // Sanity: content dominates and 2 entries stay under the byte limit while
+            // 3 would exceed it, and 2 is far below the count cap.
+            expect(2 * perFileBytes).toBeLessThan(commit_1.TREE_ENTRY_BYTE_LIMIT);
+            expect(3 * perFileBytes).toBeGreaterThan(commit_1.TREE_ENTRY_BYTE_LIMIT);
+            expect(2).toBeLessThan(commit_1.TREE_ENTRY_CHUNK_SIZE);
+            const result = await (0, commit_1.createTree)(mockOctokit, "owner", "repo", "base-tree-sha", paths);
+            expect(result).toBe("byte-chunk-2");
+            expect(mockOctokit.rest.git.createTree).toHaveBeenCalledTimes(2);
+            expect(mockOctokit.rest.git.createBlob).not.toHaveBeenCalled();
+            expect(mockOctokit.rest.git.createTree.mock.calls[0][0].tree).toHaveLength(2);
+            expect(mockOctokit.rest.git.createTree.mock.calls[0][0].base_tree).toBe("base-tree-sha");
+            expect(mockOctokit.rest.git.createTree.mock.calls[1][0].tree).toHaveLength(2);
+            expect(mockOctokit.rest.git.createTree.mock.calls[1][0].base_tree).toBe("byte-chunk-1");
+        });
+        it("should route a single text file above INLINE_CONTENT_SIZE_LIMIT through createBlob", async () => {
+            const fs = require("fs");
+            fs.existsSync = jest.fn().mockReturnValue(true);
+            fs.statSync = jest
+                .fn()
+                .mockReturnValue({ mode: 0o644, size: commit_1.INLINE_CONTENT_SIZE_LIMIT + 1 });
+            // readSync marks the file as non-binary (no NUL); default beforeEach fill.
+            fs.readFileSync = jest.fn().mockReturnValue(Buffer.from("large text"));
+            mockOctokit.rest.git.createBlob.mockResolvedValue({
+                data: { sha: "big-text-blob" },
+            });
+            // mockReset clears any queued mockResolvedValueOnce from prior tests
+            // (jest.clearAllMocks does not reset queued once-values).
+            mockOctokit.rest.git.createTree.mockReset();
+            mockOctokit.rest.git.createTree.mockResolvedValue({
+                data: { sha: "tree-big-text" },
+            });
+            const result = await (0, commit_1.createTree)(mockOctokit, "owner", "repo", "base-tree-sha", ["huge.txt"]);
+            expect(result).toBe("tree-big-text");
+            expect(mockOctokit.rest.git.createBlob).toHaveBeenCalledTimes(1);
+            expect(mockOctokit.rest.git.createTree).toHaveBeenCalledWith({
+                owner: "owner",
+                repo: "repo",
+                base_tree: "base-tree-sha",
+                tree: [
+                    {
+                        path: "huge.txt",
+                        mode: "100644",
+                        type: "blob",
+                        sha: "big-text-blob",
+                    },
+                ],
+            });
+        });
         it("should fall back to createBlob for non-UTF-8 text files (no NUL in prefix)", async () => {
             const fs = require("fs");
             fs.existsSync = jest.fn().mockReturnValue(true);

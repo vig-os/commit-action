@@ -35544,7 +35544,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.TREE_ENTRY_CHUNK_SIZE = void 0;
+exports.INLINE_CONTENT_SIZE_LIMIT = exports.TREE_ENTRY_BYTE_LIMIT = exports.TREE_ENTRY_CHUNK_SIZE = void 0;
 exports.isBinaryFile = isBinaryFile;
 exports.getFileMode = getFileMode;
 exports.createBlob = createBlob;
@@ -35571,6 +35571,21 @@ function callWithRetry(fn, retry) {
  * GitHub's ~25 MB request body limit and avoids slow single-call responses.
  */
 exports.TREE_ENTRY_CHUNK_SIZE = 100;
+/**
+ * Approximate serialized-byte budget per createTree request. A chunk starts a
+ * new request once adding an entry would exceed this. Kept conservatively well
+ * under GitHub's ~100 MB request body limit so many large inline text files do
+ * not produce an oversized payload. The count cap (TREE_ENTRY_CHUNK_SIZE) and
+ * this byte cap apply together — whichever is hit first ends the chunk.
+ */
+exports.TREE_ENTRY_BYTE_LIMIT = 6 * 1024 * 1024;
+/**
+ * Per-file size threshold (bytes) above which a text file's content is uploaded
+ * via createBlob (base64) instead of inlined into the createTree payload. Large
+ * inline content is the main driver of oversized requests; routing big files
+ * through a dedicated blob keeps the tree request small.
+ */
+exports.INLINE_CONTENT_SIZE_LIMIT = 1024 * 1024;
 /** Returns true if the file appears binary (NUL in first 8 KiB), using pre-fetched stat. */
 function isBinaryFromStat(filePath, stat) {
     if (stat.size === 0) {
@@ -35627,12 +35642,33 @@ async function createBlob(octokit, owner, repo, filePath, options, retry) {
     return { sha: blob.sha, mode };
 }
 /**
+ * Approximate serialized (UTF-8 JSON) byte size of a tree entry. Inline text
+ * entries are dominated by their `content`; blob-sha entries are tiny. A fixed
+ * overhead covers the surrounding JSON keys/quotes/braces so the estimate is a
+ * safe over-approximation rather than an exact serialization.
+ */
+function estimateEntrySize(entry) {
+    const overhead = 64;
+    const pathSize = Buffer.byteLength(entry.path, "utf-8");
+    const payloadSize = "content" in entry
+        ? Buffer.byteLength(entry.content, "utf-8")
+        : Buffer.byteLength(entry.sha, "utf-8");
+    return overhead + pathSize + payloadSize;
+}
+/**
  * Chains createTree calls when there are many entries (avoids huge payloads).
+ * A new chunk begins whenever adding the next entry would exceed either the
+ * entry-count cap (TREE_ENTRY_CHUNK_SIZE) or the approximate byte budget
+ * (TREE_ENTRY_BYTE_LIMIT); whichever limit is reached first wins.
  */
 async function createTreeChained(octokit, owner, repo, initialBaseTreeSha, entries, retry) {
     let baseTreeSha = initialBaseTreeSha;
-    for (let i = 0; i < entries.length; i += exports.TREE_ENTRY_CHUNK_SIZE) {
-        const chunk = entries.slice(i, i + exports.TREE_ENTRY_CHUNK_SIZE);
+    let chunk = [];
+    let chunkBytes = 0;
+    const flush = async () => {
+        if (chunk.length === 0) {
+            return;
+        }
         const { data: tree } = await callWithRetry(() => octokit.rest.git.createTree({
             owner,
             repo,
@@ -35640,7 +35676,22 @@ async function createTreeChained(octokit, owner, repo, initialBaseTreeSha, entri
             tree: chunk,
         }), retry);
         baseTreeSha = tree.sha;
+        chunk = [];
+        chunkBytes = 0;
+    };
+    for (const entry of entries) {
+        const entrySize = estimateEntrySize(entry);
+        // Start a new chunk if the current one is full by count, or if adding this
+        // entry would push it past the byte budget (unless the chunk is empty, so a
+        // single oversized entry still makes progress).
+        if (chunk.length >= exports.TREE_ENTRY_CHUNK_SIZE ||
+            (chunk.length > 0 && chunkBytes + entrySize > exports.TREE_ENTRY_BYTE_LIMIT)) {
+            await flush();
+        }
+        chunk.push(entry);
+        chunkBytes += entrySize;
     }
+    await flush();
     return baseTreeSha;
 }
 /**
@@ -35654,6 +35705,18 @@ async function createTree(octokit, owner, repo, baseTreeSha, filePaths, retry) {
         const mode = stat.mode & 0o111 ? "100755" : "100644";
         const isBinary = isBinaryFromStat(filePath, stat);
         if (isBinary) {
+            const result = await createBlob(octokit, owner, repo, filePath, { mode }, retry);
+            treeEntries.push({
+                path: filePath,
+                mode: result.mode,
+                type: "blob",
+                sha: result.sha,
+            });
+            continue;
+        }
+        // Large text files are routed through createBlob (base64) rather than
+        // inlined, to keep the createTree request body from growing unbounded.
+        if (stat.size > exports.INLINE_CONTENT_SIZE_LIMIT) {
             const result = await createBlob(octokit, owner, repo, filePath, { mode }, retry);
             treeEntries.push({
                 path: filePath,
