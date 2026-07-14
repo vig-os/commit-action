@@ -1,3 +1,26 @@
+# Release Extension — dist freshness verification
+#
+# The devkit release pipeline's designed project extension point: release.yml
+# calls this reusable workflow after finalize_sha is computed and before
+# release-publish tags it. A failure here fails the `extension` job in
+# release.yml, which triggers the existing rollback via `needs` — so this is the
+# last gate before a tag is cut.
+#
+# This project uses it to guarantee the tagged commit ships a fresh ncc bundle:
+# it checks out inputs.finalize_sha, rebuilds with the pinned dev-shell
+# toolchain, and diffs the committed dist/index.js. A stale bundle fails the job
+# and rolls the release back. Read-only verification (contents: read) — the CI
+# dist-check gate (#59) is what keeps dist/ fresh on the branch; this is the
+# release-time backstop that a merge did not slip a stale bundle through.
+#
+# Only dist/index.js is verified: it is the sole runtime artifact (action.yml ->
+# main: dist/index.js) and is build-location independent, unlike the tsc
+# declaration byproducts under dist/src/.
+#
+# The workflow_call inputs contract is fixed — release.yml passes these by name.
+# Toolchain inputs are NOT part of that contract, so this workflow self-resolves
+# the delivery mode from .vig-os (mirroring ci.yml) rather than receiving it.
+
 name: Release Extension
 
 on:  # yamllint disable-line rule:truthy
@@ -28,21 +51,69 @@ permissions:
   contents: read
 
 jobs:
-  extension:
-    name: Extension Hook (Default No-op)
+  resolve-toolchain:
+    name: Resolve toolchain
     runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    outputs:
+      mode: ${{ steps.resolve.outputs.mode }}
+      image: ${{ steps.resolve.outputs.image }}
+      image-tag: ${{ steps.resolve.outputs.image-tag }}
+
     steps:
-      - name: Default extension summary
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          ref: ${{ inputs.finalize_sha }}
+          sparse-checkout: |
+            .vig-os
+            .github/actions/resolve-toolchain
+          sparse-checkout-cone-mode: false
+
+      - name: Resolve toolchain
+        id: resolve
+        uses: ./.github/actions/resolve-toolchain
+        with:
+          registry-token: ${{ github.token }}
+          registry-username: ${{ github.actor }}
+
+  verify-dist:
+    name: Verify dist bundle
+    needs: [resolve-toolchain]
+    runs-on: ubuntu-24.04
+    # Empty image (direnv/bare) => runs on the host; non-empty => in-container.
+    # The credentials block is inert on the host (proven by the #992 spike).
+    container:
+      image: ${{ needs.resolve-toolchain.outputs.image }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout finalized commit
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          ref: ${{ inputs.finalize_sha }}
+
+      - name: Set up devkit toolchain
+        uses: ./.github/actions/setup-devkit-toolchain
+        with:
+          mode: ${{ needs.resolve-toolchain.outputs.mode }}
+          devkit-version: ${{ needs.resolve-toolchain.outputs.image-tag }}
+
+      - name: Install dependencies
+        run: just sync
+
+      - name: Rebuild bundle
+        run: just bundle
+
+      - name: Verify committed bundle is fresh
         env:
-          VERSION: ${{ inputs.version }}
           FINALIZE_SHA: ${{ inputs.finalize_sha }}
-          RELEASE_DATE: ${{ inputs.release_date }}
-          RELEASE_KIND: ${{ inputs.release_kind }}
           PUBLISH_VERSION: ${{ inputs.publish_version }}
         run: |
-          echo "No release extension configured."
-          echo "Version: $VERSION"
-          echo "Release kind: $RELEASE_KIND"
-          echo "Publish version: $PUBLISH_VERSION"
-          echo "Finalize SHA: $FINALIZE_SHA"
-          echo "Release date: $RELEASE_DATE"
+          if ! git diff --exit-code dist/index.js; then
+            echo "::error::dist/index.js at $FINALIZE_SHA (publishing $PUBLISH_VERSION) is stale relative to src/. Run 'just bundle', commit the refreshed dist/index.js, and re-run the release."
+            exit 1
+          fi
