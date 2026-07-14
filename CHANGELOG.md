@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+
+- CI now gates the committed ncc bundle against source drift so a stale `dist/index.js` can never reach a tag. A new consumer-owned `dist-check` workflow rebuilds the bundle on every PR to `dev`/`release/**`/`main` and fails when the committed `dist/index.js` differs, and the release-time `release-extension` hook re-verifies the finalized commit before it is tagged (rolling the release back on drift). Both rebuild with the pinned dev-shell toolchain (issue #59).
+
 ### Changed
 
 - Migrated ESLint to flat config (`eslint.config.mjs`, replacing `.eslintrc.json`) and bumped `eslint` from `8.57` to `10.x`. ESLint 9 made flat config the default and ESLint 10 removed the legacy `.eslintrc` path entirely. The rule set is a faithful port — same base configs and the same two overrides — with the `node`/`es6`/`jest` environments becoming `languageOptions.globals`. `@typescript-eslint/eslint-plugin` and `@typescript-eslint/parser` are replaced by the `typescript-eslint` meta package, the canonical v8 flat-config entry point (issue #64).
