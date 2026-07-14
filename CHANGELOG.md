@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- CI now gates the committed ncc bundle against source drift so a stale `dist/index.js` can never reach a tag. A new consumer-owned `dist-check` workflow rebuilds the bundle on every PR to `dev`/`release/**`/`main` and fails when the committed `dist/index.js` differs, and the release-time `release-extension` hook re-verifies the finalized commit before it is tagged (rolling the release back on drift). Both rebuild with the pinned dev-shell toolchain (issue #59).
+- CI now gates the committed ncc bundle against source drift so a stale `dist/index.js` can never reach a tag. A new consumer-owned `dist-check` workflow rebuilds the bundle on every PR to `release/**`/`main` and fails when the committed `dist/index.js` differs, and the release-time `release-extension` hook re-verifies the finalized commit before it is tagged (rolling the release back on drift). Both rebuild with the pinned dev-shell toolchain (issue #59). The gate is deliberately scoped to the release boundary — `dev` is not gated, since nothing ships from `dev` and gating it would fail every Renovate runtime-dependency bump (issue #71).
 
 ### Changed
 

@@ -7,6 +7,14 @@
 # dev-shell toolchain and fails the PR when the committed dist/index.js differs,
 # forcing a fresh bundle onto every commit that can reach a tag (#59).
 #
+# Scoped to the release boundary (#71): dev is NOT gated. Nothing ships from
+# dev (only tags ship), so a stale bundle there is harmless and gating it made
+# every Renovate runtime-dep bump fail. Staleness inherited from dev surfaces
+# on the release/X.Y.Z -> main draft PR right after prepare-release and is
+# fixed by a bugfix PR to the release branch; release-extension.yml's
+# finalize-time verification remains the hard guarantee that no tag is cut on
+# a stale bundle.
+#
 # Deliberately a SEPARATE file from the scaffold-managed ci.yml (no edits to a
 # managed workflow); the `Dist Check` job is wired as a required status check
 # (#60), so its `name:` is contractual — do not rename it.
@@ -23,14 +31,13 @@
 # across checkout locations.
 #
 # Triggers:
-#   - Pull requests to dev, release/**, and main
+#   - Pull requests to release/** and main
 
 name: Dist Check
 
 on:  # yamllint disable-line rule:truthy
   pull_request:
     branches:
-      - dev
       - 'release/**'
       - main
 
