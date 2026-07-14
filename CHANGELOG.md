@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+
+- **`npm run lint` and `npm run format` had never checked the real source.** Both globbed with `src/**/*.ts`, but npm runs scripts through `sh`, which has no globstar — so `**` degraded to a single `*` and the pattern collapsed to `src/*/*.ts`, matching only files exactly one directory deep. In practice that was a single test-setup file; `src/commit.ts`, `src/commit-runner.ts` and `src/retry.ts` — the entire production surface — were matched by neither script. The scripts now pass the directory (`eslint src`, `prettier --write src`) and let each tool expand its own globs with correct `**` semantics (issue #66).
+- Attached the originating error as `cause` when `commit-runner` rethrows a `git status` failure, so the underlying `execSync` error is no longer discarded (surfaced by the above; ESLint 10's `preserve-caught-error`).
+- Removed a dead initializer on `bytesRead` in `isBinaryFromStat`. Not a correctness bug — the value was always overwritten before being read — but it masked the read from the compiler's definite-assignment analysis (`no-useless-assignment`).
+
 ### Changed
 
 - **Migrated the action to ESM.** The `@actions/*` toolkit went ESM-only at its next major (no `require` condition in its `exports` map at all), so `@actions/core` v3, `@actions/github` v9 and `@actions/http-client` v4 were unlandable individually and had to move together (issues #49, #50, #51). The package is now `"type": "module"`, TypeScript resolves with `module`/`moduleResolution: nodenext`, relative imports carry explicit `.js` extensions, and `ncc` emits an ESM bundle (plus a small `dist/package.json` declaring the bundle's module type, now tracked alongside `dist/index.js`). Jest runs in ESM mode: the module mocks moved from `jest.mock` + a `__mocks__` manual mock to `jest.unstable_mockModule` with dynamic imports, and the old `src/__tests__/setup.ts` is gone. All 84 tests are preserved unchanged (issue #58).

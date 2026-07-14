@@ -82,7 +82,7 @@ function isBinaryFromStat(filePath: string, stat: fs.Stats): boolean {
   const toRead = Math.min(8192, stat.size);
   const buf = Buffer.alloc(toRead);
   const fd = fs.openSync(filePath, "r");
-  let bytesRead = 0;
+  let bytesRead: number;
   try {
     bytesRead = fs.readSync(fd, buf, 0, toRead, 0);
   } finally {

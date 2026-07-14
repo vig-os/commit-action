@@ -176,7 +176,8 @@ export async function main(): Promise<void> {
         filePaths = changedFiles;
       } catch (error) {
         throw new Error(
-          `Failed to detect changed files from git status: ${error instanceof Error ? error.message : "Unknown error"}`
+          `Failed to detect changed files from git status: ${error instanceof Error ? error.message : "Unknown error"}`,
+          { cause: error }
         );
       }
     }
