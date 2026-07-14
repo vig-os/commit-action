@@ -148,7 +148,10 @@ activemq-data/
 
 # Environments
 .env
-.envrc
+# .envrc (use flake) is committed for nix-direnv onboarding (#640); the local
+# evaluation cache and any per-user overrides are not.
+.direnv/
+.envrc.local
 .venv
 env/
 venv/
@@ -214,14 +217,25 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
+# Personal justfile recipes
+justfile.local
+
 # Pre-commit cache
 .pre-commit-cache/
 
-# Action output
+# process-compose / services-flake local dev services state (#795)
+data/
+
+# Node / GitHub Action output (this is a JS action; dist/index.js IS committed —
+# only the test build output and local caches are ignored). Restored after the
+# devkit scaffold's Python-only .gitignore dropped these; see vig-os/devkit.
 node_modules/
 dist/__tests__
-*.log
-.DS_Store
 coverage/
 .nyc_output/
 *.tsbuildinfo
+.DS_Store
+
+# Flake-generated pre-commit config (#883): the dev-shell installs this as a
+# symlink into the Nix store, so it is not source-controlled.
+.pre-commit-config.yaml

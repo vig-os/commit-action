@@ -1,0 +1,51 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "timezone": "Etc/UTC",
+  "schedule": ["before 9am on monday"],
+  "baseBranchPatterns": ["dev"],
+  "rebaseWhen": "conflicted",
+  "gitIgnoredAuthors": ["41898282+github-actions[bot]@users.noreply.github.com"],
+  "packageRules": [
+    {
+      "description": "GitHub Actions — semantic commit + group minor/patch",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "github-actions (minor and patch)",
+      "semanticCommitType": "ci",
+      "semanticCommitScope": "actions"
+    },
+    {
+      "description": "GitHub Actions — major updates stay separate",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["major"],
+      "semanticCommitType": "ci",
+      "semanticCommitScope": "actions"
+    },
+    {
+      "description": "Python (PEP 621) — always pin ranges",
+      "matchManagers": ["pep621"],
+      "rangeStrategy": "pin",
+      "semanticCommitType": "build",
+      "semanticCommitScope": "pip"
+    },
+    {
+      "description": "requires-python is a deliberate range: the Nix toolchain pins the exact interpreter via flake.lock, so an == pin is redundant and unsatisfiable against nixpkgs. Exempt it from the pin rule above. Refs #666.",
+      "matchManagers": ["pep621"],
+      "matchDepTypes": ["requires-python"],
+      "enabled": false
+    },
+    {
+      "description": "Python — group minor/patch",
+      "matchManagers": ["pep621"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "python (minor and patch)"
+    },
+    {
+      "description": "npm",
+      "matchManagers": ["npm"],
+      "semanticCommitType": "build",
+      "semanticCommitScope": "npm"
+    }
+  ]
+}

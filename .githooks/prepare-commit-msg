@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Set error handling, fail on any error during script execution
+# Strip AI agent trailers from commit message before validation.
+# Refs: #163
 set -euo pipefail
 
 # Sanctioned environments: the dev container (IN_CONTAINER, set by the
@@ -11,5 +12,5 @@ if [ "${IN_CONTAINER:-}" != "true" ] && [ -z "${IN_NIX_SHELL:-}" ]; then
 	exit 1
 fi
 
-# Run pre-commit hooks
-prek run
+# Run pre-commit prepare-commit-msg hooks
+prek run --hook-stage prepare-commit-msg --commit-msg-filename "$1"
