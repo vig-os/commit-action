@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+
+- **`npm run lint` and `npm run format` had never checked the real source.** Both globbed with `src/**/*.ts`, but npm runs scripts through `sh`, which has no globstar — so `**` degraded to a single `*` and the pattern collapsed to `src/*/*.ts`, matching only files exactly one directory deep. In practice that was a single test-setup file; `src/commit.ts`, `src/commit-runner.ts` and `src/retry.ts` — the entire production surface — were matched by neither script. The scripts now pass the directory (`eslint src`, `prettier --write src`) and let each tool expand its own globs with correct `**` semantics (issue #66).
+- Attached the originating error as `cause` when `commit-runner` rethrows a `git status` failure, so the underlying `execSync` error is no longer discarded (surfaced by the above; ESLint 10's `preserve-caught-error`).
+- Removed a dead initializer on `bytesRead` in `isBinaryFromStat`. Not a correctness bug — the value was always overwritten before being read — but it masked the read from the compiler's definite-assignment analysis (`no-useless-assignment`).
+
 ### Changed
 
 - **Migrated the action to ESM.** The `@actions/*` toolkit went ESM-only at its next major (no `require` condition in its `exports` map at all), so `@actions/core` v3, `@actions/github` v9 and `@actions/http-client` v4 were unlandable individually and had to move together (issues #49, #50, #51). The package is now `"type": "module"`, TypeScript resolves with `module`/`moduleResolution: nodenext`, relative imports carry explicit `.js` extensions, and `ncc` emits an ESM bundle (plus a small `dist/package.json` declaring the bundle's module type, now tracked alongside `dist/index.js`). Jest runs in ESM mode: the module mocks moved from `jest.mock` + a `__mocks__` manual mock to `jest.unstable_mockModule` with dynamic imports, and the old `src/__tests__/setup.ts` is gone. All 84 tests are preserved unchanged (issue #58).
@@ -15,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- A new consumer-owned `js-quality` workflow gates every PR on `just lint` and `just format-check` (a new read-only recipe backed by `prettier --check src`). Neither eslint nor prettier was enforced anywhere before: the scaffold-managed `ci.yml` has a "Lint & Format" job, but it runs only the prek hook suite, which contains no JS linter or formatter. That is precisely how the broken globs above survived — the scripts were never run by anything but a human. Fixing them without a gate would have let them rot again the same way (issue #66).
 - A new `e2e-smoke` workflow executes the **committed bundle** against the real GitHub API on every PR, running the action the way a consumer does (`uses: ./`) rather than importing its source. It commits a file to a scratch branch through the full REST flow and asserts the commit exists, is **signed**, and carries the expected content, then deletes the branch. Nothing previously executed `dist/index.js`: the unit tests import `main()` directly and the repo dogfoods `commit-action` at a pinned released SHA. That gap is not theoretical — the ESM migration found that the CommonJS `require.main === module` entry guard does not survive bundling to ESM, leaving the bundled action a silent no-op (exit 0, nothing committed) that 84 passing unit tests could not see (issue #58).
 - CI now gates the committed ncc bundle against source drift so a stale `dist/index.js` can never reach a tag. A new consumer-owned `dist-check` workflow rebuilds the bundle on every PR to `release/**`/`main` and fails when the committed `dist/index.js` differs, and the release-time `release-extension` hook re-verifies the finalized commit before it is tagged (rolling the release back on drift). Both rebuild with the pinned dev-shell toolchain (issue #59). The gate is deliberately scoped to the release boundary — `dev` is not gated, since nothing ships from `dev` and gating it would fail every Renovate runtime-dependency bump (issue #71).
 

@@ -13,13 +13,13 @@
  * - MAX_ATTEMPTS: Max retry attempts for transient API failures (default: 1 = no retries)
  */
 
-import * as core from "@actions/core";
-import * as github from "@actions/github";
-import { execSync } from "child_process";
-import * as fs from "fs";
-import * as path from "path";
-import { pathToFileURL } from "url";
-import { commitViaAPI } from "./commit.js";
+import * as core from '@actions/core';
+import * as github from '@actions/github';
+import { execSync } from 'child_process';
+import * as fs from 'fs';
+import * as path from 'path';
+import { pathToFileURL } from 'url';
+import { commitViaAPI } from './commit.js';
 
 /**
  * Normalizes a Git reference to a branch name
@@ -27,10 +27,10 @@ import { commitViaAPI } from "./commit.js";
  * @returns Normalized branch/tag name
  */
 export function normalizeBranch(ref: string): string {
-  if (ref.startsWith("refs/heads/")) {
-    return ref.replace("refs/heads/", "");
-  } else if (ref.startsWith("refs/")) {
-    return ref.replace(/^refs\/[^/]+\//, "");
+  if (ref.startsWith('refs/heads/')) {
+    return ref.replace('refs/heads/', '');
+  } else if (ref.startsWith('refs/')) {
+    return ref.replace(/^refs\/[^/]+\//, '');
   }
   return ref;
 }
@@ -65,7 +65,7 @@ function isGitMetadataPath(targetPath: string): boolean {
     .normalize(targetPath)
     .split(/[\\/]+/)
     .filter((segment) => segment.length > 0);
-  return segments.includes(".git");
+  return segments.includes('.git');
 }
 
 function findFilesRecursively(dir: string): string[] {
@@ -92,20 +92,15 @@ export async function main(): Promise<void> {
     // Get token from environment
     const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
     if (!token) {
-      throw new Error(
-        "GITHUB_TOKEN or GH_TOKEN environment variable is required"
-      );
+      throw new Error('GITHUB_TOKEN or GH_TOKEN environment variable is required');
     }
 
     // Get repository info
     const repository =
-      process.env.GITHUB_REPOSITORY ||
-      github.context.repo.owner + "/" + github.context.repo.repo;
-    const [owner, repo] = repository.split("/");
+      process.env.GITHUB_REPOSITORY || github.context.repo.owner + '/' + github.context.repo.repo;
+    const [owner, repo] = repository.split('/');
     if (!owner || !repo) {
-      throw new Error(
-        `Invalid repository format: ${repository}. Expected "owner/repo"`
-      );
+      throw new Error(`Invalid repository format: ${repository}. Expected "owner/repo"`);
     }
 
     // Get branch from TARGET_BRANCH (preferred), GITHUB_REF, or context
@@ -123,19 +118,21 @@ export async function main(): Promise<void> {
     if (targetBranch) {
       core.info(`Using TARGET_BRANCH: ${branch}`);
     } else if (explicitRef && explicitRef !== contextRef) {
-      core.info(`Using explicit GITHUB_REF: ${branch} (was: ${explicitRef}, context: ${contextRef})`);
+      core.info(
+        `Using explicit GITHUB_REF: ${branch} (was: ${explicitRef}, context: ${contextRef})`
+      );
     } else {
       core.info(`Using branch from workflow context: ${branch} (GITHUB_REF was: ${explicitRef})`);
     }
 
     // Get commit message
-    const message = process.env.COMMIT_MESSAGE || "chore: update files";
-    const allowEmpty = (process.env.ALLOW_EMPTY || "").toLowerCase() === "true";
+    const message = process.env.COMMIT_MESSAGE || 'chore: update files';
+    const allowEmpty = (process.env.ALLOW_EMPTY || '').toLowerCase() === 'true';
 
     // Get file paths from environment or detect from git status
     let filePaths: string[] = [];
     if (process.env.FILE_PATHS) {
-      const paths = process.env.FILE_PATHS.split(",")
+      const paths = process.env.FILE_PATHS.split(',')
         .map((p) => p.trim())
         .filter((p) => p.length > 0);
 
@@ -157,11 +154,11 @@ export async function main(): Promise<void> {
     } else {
       // Detect changed files from git status
       try {
-        const gitStatus = execSync("git status --porcelain", {
-          encoding: "utf-8",
+        const gitStatus = execSync('git status --porcelain', {
+          encoding: 'utf-8',
         });
         const changedFiles = gitStatus
-          .split("\n")
+          .split('\n')
           .filter((line) => line.trim().length > 0)
           .map((line) => {
             // git status format: "XY filename" where X is staged, Y is working tree
@@ -169,29 +166,28 @@ export async function main(): Promise<void> {
             const match = line.match(/^[AM]\s+(.+)$/);
             return match ? match[1] : null;
           })
-          .filter(
-            (file): file is string => file !== null && fs.existsSync(file)
-          );
+          .filter((file): file is string => file !== null && fs.existsSync(file));
 
         filePaths = changedFiles;
       } catch (error) {
         throw new Error(
-          `Failed to detect changed files from git status: ${error instanceof Error ? error.message : "Unknown error"}`
+          `Failed to detect changed files from git status: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          { cause: error }
         );
       }
     }
 
     if (filePaths.length === 0 && !allowEmpty) {
-      core.info("No files to commit");
+      core.info('No files to commit');
       return;
     }
 
     if (filePaths.length === 0 && allowEmpty) {
-      core.info("Creating empty commit (ALLOW_EMPTY=true)");
+      core.info('Creating empty commit (ALLOW_EMPTY=true)');
     }
 
     core.info(`Committing ${filePaths.length} file(s) to branch ${branch}`);
-    core.info(`Files: ${filePaths.join(", ")}`);
+    core.info(`Files: ${filePaths.join(', ')}`);
 
     // Get base SHA if provided (for testing or specific use cases)
     const baseSha = process.env.BASE_SHA;
@@ -202,9 +198,7 @@ export async function main(): Promise<void> {
     if (rawAttempts) {
       const parsed = parseInt(rawAttempts, 10);
       if (Number.isNaN(parsed) || parsed < 1) {
-        core.info(
-          `MAX_ATTEMPTS="${rawAttempts}" invalid, using 1 (no retries)`
-        );
+        core.info(`MAX_ATTEMPTS="${rawAttempts}" invalid, using 1 (no retries)`);
       } else {
         maxAttempts = parsed;
         if (maxAttempts > 1) {
@@ -228,14 +222,14 @@ export async function main(): Promise<void> {
     });
 
     core.info(`Created signed commit ${result.commitSha} via GitHub API`);
-    core.setOutput("commit-sha", result.commitSha);
-    core.setOutput("tree-sha", result.treeSha);
-    core.setOutput("files-committed", result.filesCommitted.toString());
+    core.setOutput('commit-sha', result.commitSha);
+    core.setOutput('tree-sha', result.treeSha);
+    core.setOutput('files-committed', result.filesCommitted.toString());
   } catch (error) {
     if (error instanceof Error) {
       core.setFailed(error.message);
     } else {
-      core.setFailed("Unknown error occurred");
+      core.setFailed('Unknown error occurred');
     }
     process.exit(1);
   }

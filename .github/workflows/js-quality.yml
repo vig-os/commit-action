@@ -1,0 +1,97 @@
+# ESLint & Prettier (consumer-owned)
+#
+# Nothing enforced eslint or prettier before this. The scaffold-managed ci.yml
+# has a "Lint & Format" job, but it runs `just precommit` — the prek hook suite,
+# which contains no JS linter or formatter at all. So `npm run lint` and
+# `npm run format` were only ever run by hand.
+#
+# That is exactly how #66 stayed invisible: both scripts globbed `src/**/*.ts`,
+# npm ran them through sh (no globstar), the pattern collapsed to `src/*/*.ts`,
+# and they linted a single test-setup file for the life of the repo. Fixing the
+# scripts without gating them in CI would just let them rot again the same way.
+#
+# Deliberately a SEPARATE file from ci.yml (no edits to a managed workflow), same
+# as dist-check.yml. Toolchain provisioning mirrors ci.yml: a leading
+# resolve-toolchain job reads .vig-os and emits the delivery mode + container
+# image (empty string => host runner in direnv/bare), and the job below runs the
+# shared setup-devkit-toolchain composite so eslint/prettier run under the same
+# pinned Node as the dev-shell.
+#
+# `just lint` / `just format-check` are the same recipes a developer runs
+# locally, so a green CI here means a green tree there — no CI-only invocation to
+# drift out of sync. format-check is the read-only counterpart of `just format`:
+# it fails on unformatted code rather than rewriting it.
+
+name: JS Quality
+
+on:  # yamllint disable-line rule:truthy
+  pull_request:
+    branches:
+      - dev
+      - 'release/**'
+      - main
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  resolve-toolchain:
+    name: Resolve toolchain
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    outputs:
+      mode: ${{ steps.resolve.outputs.mode }}
+      image: ${{ steps.resolve.outputs.image }}
+      image-tag: ${{ steps.resolve.outputs.image-tag }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          sparse-checkout: |
+            .vig-os
+            .github/actions/resolve-toolchain
+          sparse-checkout-cone-mode: false
+
+      - name: Resolve toolchain
+        id: resolve
+        uses: ./.github/actions/resolve-toolchain
+        with:
+          registry-token: ${{ secrets.GHCR_PULL_TOKEN || github.token }}
+          registry-username: ${{ github.actor }}
+
+  js-quality:
+    name: ESLint & Prettier
+    needs: [resolve-toolchain]
+    runs-on: ubuntu-24.04
+    # Empty image (direnv/bare) => runs on the host; non-empty => in-container.
+    container:
+      image: ${{ needs.resolve-toolchain.outputs.image }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GHCR_PULL_TOKEN || github.token }}
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+
+      - name: Set up devkit toolchain
+        uses: ./.github/actions/setup-devkit-toolchain
+        with:
+          mode: ${{ needs.resolve-toolchain.outputs.mode }}
+          devkit-version: ${{ needs.resolve-toolchain.outputs.image-tag }}
+          cachix-cache: ${{ vars.CACHIX_CACHE }}
+          cachix-auth-token: ${{ secrets.CACHIX_AUTH_TOKEN }}
+
+      - name: Install dependencies
+        run: just sync
+
+      - name: Lint
+        run: just lint
+
+      # Read-only: fails on unformatted code rather than rewriting it. Run
+      # `just format` locally to fix.
+      - name: Check formatting
+        run: just format-check
