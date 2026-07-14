@@ -59,10 +59,10 @@ test-cov *args:
 sync *args="--all-groups":
     @if [ -f pyproject.toml ]; then uv sync {{ args }}; elif [ -f package.json ]; then npm ci; fi
 
-# Update all dependencies
+# Update all dependencies (uv lock for Python, npm update for Node)
 [group('deps')]
 update:
-    uv lock --upgrade
+    @if [ -f pyproject.toml ]; then uv lock --upgrade; elif [ -f package.json ]; then npm update; fi
     @just sync
 
 # -------------------------------------------------------------------------------
