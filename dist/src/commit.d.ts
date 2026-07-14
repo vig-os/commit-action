@@ -1,4 +1,14 @@
 import * as github from "@actions/github";
+import { RetryConfig } from "./retry";
+/**
+ * Retry settings threaded into individual Octokit REST call sites so a transient
+ * mid-batch failure retries only the failing call, not the whole multi-call
+ * operation (avoids re-uploading blobs/trees). Omitting it disables retries.
+ */
+export interface RetryOptions {
+    config: RetryConfig;
+    logger?: (msg: string) => void;
+}
 export interface CommitOptions {
     token: string;
     owner: string;
@@ -43,7 +53,7 @@ export interface CreateBlobOptions {
 /**
  * Creates a Git blob for a file via GitHub API
  */
-export declare function createBlob(octokit: ReturnType<typeof github.getOctokit>, owner: string, repo: string, filePath: string, options?: CreateBlobOptions): Promise<{
+export declare function createBlob(octokit: ReturnType<typeof github.getOctokit>, owner: string, repo: string, filePath: string, options?: CreateBlobOptions, retry?: RetryOptions): Promise<{
     sha: string;
     mode: "100644" | "100755";
 }>;
@@ -51,7 +61,7 @@ export declare function createBlob(octokit: ReturnType<typeof github.getOctokit>
  * Creates a Git tree with updated files via GitHub API.
  * Text files use inline `content` (one fewer API call per file). Binary files use createBlob.
  */
-export declare function createTree(octokit: ReturnType<typeof github.getOctokit>, owner: string, repo: string, baseTreeSha: string, filePaths: string[]): Promise<string>;
+export declare function createTree(octokit: ReturnType<typeof github.getOctokit>, owner: string, repo: string, baseTreeSha: string, filePaths: string[], retry?: RetryOptions): Promise<string>;
 /**
  * Creates a commit via GitHub API (automatically signed by GitHub)
  */

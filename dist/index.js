@@ -35557,6 +35557,16 @@ const github = __importStar(__nccwpck_require__(3228));
 const fs = __importStar(__nccwpck_require__(9896));
 const retry_1 = __nccwpck_require__(9809);
 /**
+ * Runs an Octokit REST call, retrying only that call on transient errors when
+ * `retry` is provided. Without `retry`, the call runs once (no wrapping).
+ */
+function callWithRetry(fn, retry) {
+    if (!retry) {
+        return fn();
+    }
+    return (0, retry_1.withRetry)(fn, retry.config, retry.logger);
+}
+/**
  * Max tree entries per createTree request. Keeps payloads comfortably under
  * GitHub's ~25 MB request body limit and avoids slow single-call responses.
  */
@@ -35601,34 +35611,34 @@ function getFileMode(filePath) {
 /**
  * Creates a Git blob for a file via GitHub API
  */
-async function createBlob(octokit, owner, repo, filePath, options) {
+async function createBlob(octokit, owner, repo, filePath, options, retry) {
     if (!fs.existsSync(filePath)) {
         throw new Error(`File not found: ${filePath}`);
     }
     const content = fs.readFileSync(filePath);
     const base64Content = content.toString("base64");
-    const { data: blob } = await octokit.rest.git.createBlob({
+    const { data: blob } = await callWithRetry(() => octokit.rest.git.createBlob({
         owner,
         repo,
         content: base64Content,
         encoding: "base64",
-    });
+    }), retry);
     const mode = options?.mode ?? getFileMode(filePath);
     return { sha: blob.sha, mode };
 }
 /**
  * Chains createTree calls when there are many entries (avoids huge payloads).
  */
-async function createTreeChained(octokit, owner, repo, initialBaseTreeSha, entries) {
+async function createTreeChained(octokit, owner, repo, initialBaseTreeSha, entries, retry) {
     let baseTreeSha = initialBaseTreeSha;
     for (let i = 0; i < entries.length; i += exports.TREE_ENTRY_CHUNK_SIZE) {
         const chunk = entries.slice(i, i + exports.TREE_ENTRY_CHUNK_SIZE);
-        const { data: tree } = await octokit.rest.git.createTree({
+        const { data: tree } = await callWithRetry(() => octokit.rest.git.createTree({
             owner,
             repo,
             base_tree: baseTreeSha,
             tree: chunk,
-        });
+        }), retry);
         baseTreeSha = tree.sha;
     }
     return baseTreeSha;
@@ -35637,14 +35647,14 @@ async function createTreeChained(octokit, owner, repo, initialBaseTreeSha, entri
  * Creates a Git tree with updated files via GitHub API.
  * Text files use inline `content` (one fewer API call per file). Binary files use createBlob.
  */
-async function createTree(octokit, owner, repo, baseTreeSha, filePaths) {
+async function createTree(octokit, owner, repo, baseTreeSha, filePaths, retry) {
     const treeEntries = [];
     for (const filePath of filePaths) {
         const stat = fs.statSync(filePath);
         const mode = stat.mode & 0o111 ? "100755" : "100644";
         const isBinary = isBinaryFromStat(filePath, stat);
         if (isBinary) {
-            const result = await createBlob(octokit, owner, repo, filePath, { mode });
+            const result = await createBlob(octokit, owner, repo, filePath, { mode }, retry);
             treeEntries.push({
                 path: filePath,
                 mode: result.mode,
@@ -35664,7 +35674,7 @@ async function createTree(octokit, owner, repo, baseTreeSha, filePaths) {
             });
         }
         catch {
-            const result = await createBlob(octokit, owner, repo, filePath, { mode });
+            const result = await createBlob(octokit, owner, repo, filePath, { mode }, retry);
             treeEntries.push({
                 path: filePath,
                 mode: result.mode,
@@ -35676,7 +35686,7 @@ async function createTree(octokit, owner, repo, baseTreeSha, filePaths) {
     if (treeEntries.length === 0) {
         return baseTreeSha;
     }
-    return createTreeChained(octokit, owner, repo, baseTreeSha, treeEntries);
+    return createTreeChained(octokit, owner, repo, baseTreeSha, treeEntries, retry);
 }
 /**
  * Creates a commit via GitHub API (automatically signed by GitHub)
@@ -35758,9 +35768,15 @@ async function commitViaAPI(options) {
         baseTreeSha = branchInfo.treeSha;
     }
     // For empty commits, reuse parent tree SHA; otherwise create a new tree.
+    // Retries are applied per Octokit call site inside createTree (createBlob /
+    // chained createTree), so a transient mid-batch failure retries only the
+    // failing call instead of re-running the whole multi-call operation.
     const newTreeSha = filePaths.length === 0
         ? baseTreeSha
-        : await (0, retry_1.withRetry)(() => createTree(octokit, owner, repo, baseTreeSha, filePaths), retryConfig, log);
+        : await createTree(octokit, owner, repo, baseTreeSha, filePaths, {
+            config: retryConfig,
+            logger: log,
+        });
     // Create commit (automatically signed by GitHub)
     const commitSha = await (0, retry_1.withRetry)(() => createCommit(octokit, owner, repo, newTreeSha, branchSha, message), retryConfig, log);
     // Update branch reference
