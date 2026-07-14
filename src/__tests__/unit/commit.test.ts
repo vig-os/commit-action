@@ -835,6 +835,121 @@ describe("commit", () => {
         expect(mockOctokit.rest.git.getRef).toHaveBeenCalledTimes(2);
       });
 
+      it("retries only the failing createTree chunk, not already-succeeded blobs/trees", async () => {
+        const fs = require("fs");
+        const n = TREE_ENTRY_CHUNK_SIZE + 1;
+        const paths = Array.from({ length: n }, (_, i) => `f${i}.txt`);
+        fs.existsSync = jest.fn().mockReturnValue(true);
+        fs.statSync = jest.fn().mockReturnValue({ mode: 0o644, size: 2 });
+        fs.readFileSync = jest.fn((path: string, enc?: string) =>
+          enc === "utf-8" ? "ab" : Buffer.from("ab")
+        );
+
+        mockOctokit.rest.git.getRef.mockResolvedValue({
+          data: { object: { sha: "base-sha" } },
+        });
+        mockOctokit.rest.git.getCommit.mockResolvedValue({
+          data: { tree: { sha: "base-tree-sha" } },
+        });
+        // First chunk succeeds; second chunk fails transiently once, then succeeds.
+        mockOctokit.rest.git.createTree
+          .mockResolvedValueOnce({ data: { sha: "tree-chunk-1" } })
+          .mockRejectedValueOnce({ status: 503 })
+          .mockResolvedValueOnce({ data: { sha: "tree-chunk-2" } });
+        mockOctokit.rest.git.createCommit.mockResolvedValue({
+          data: { sha: "commit-sha" },
+        });
+        mockOctokit.rest.git.updateRef.mockResolvedValue({ data: {} });
+
+        const result = await commitViaAPI({
+          token: "test-token",
+          owner: "owner",
+          repo: "repo",
+          branch: "dev",
+          message: "Test",
+          filePaths: paths,
+          maxAttempts: 2,
+          baseDelayMs: 1,
+          maxDelayMs: 5,
+        });
+
+        expect(result.treeSha).toBe("tree-chunk-2");
+        // 3 calls total: chunk-1 (once), chunk-2 (fail + retry). The first
+        // chunk is NOT re-uploaded when the second chunk fails mid-batch.
+        expect(mockOctokit.rest.git.createTree).toHaveBeenCalledTimes(3);
+        expect(mockOctokit.rest.git.createTree.mock.calls[0][0].base_tree).toBe(
+          "base-tree-sha"
+        );
+        // The retried (2nd) call and its retry (3rd) target the same chunk,
+        // chained onto the first chunk's result — proving no re-run of chunk 1.
+        expect(mockOctokit.rest.git.createTree.mock.calls[1][0].base_tree).toBe(
+          "tree-chunk-1"
+        );
+        expect(mockOctokit.rest.git.createTree.mock.calls[2][0].base_tree).toBe(
+          "tree-chunk-1"
+        );
+        expect(mockOctokit.rest.git.createBlob).not.toHaveBeenCalled();
+      });
+
+      it("retries a failing createBlob without re-uploading earlier blobs", async () => {
+        const fs = require("fs");
+        fs.existsSync = jest.fn().mockReturnValue(true);
+        fs.statSync = jest.fn().mockReturnValue({ mode: 0o644, size: 4 });
+        // Both files are binary (NUL in prefix) -> each needs createBlob.
+        fs.readSync = jest.fn(
+          (_fd: number, buf: Buffer, offset = 0, length?: number) => {
+            const nn = length ?? buf.length - offset;
+            buf[offset] = 0;
+            if (nn > 1) {
+              buf.fill(0x62, offset + 1, offset + nn);
+            }
+            return nn;
+          }
+        );
+        fs.readFileSync = jest.fn(() => Buffer.from([0, 1, 2, 3]));
+
+        mockOctokit.rest.git.getRef.mockResolvedValue({
+          data: { object: { sha: "base-sha" } },
+        });
+        mockOctokit.rest.git.getCommit.mockResolvedValue({
+          data: { tree: { sha: "base-tree-sha" } },
+        });
+        // First blob succeeds; second blob fails transiently once, then succeeds.
+        mockOctokit.rest.git.createBlob
+          .mockResolvedValueOnce({ data: { sha: "blob-1" } })
+          .mockRejectedValueOnce({ status: 503 })
+          .mockResolvedValueOnce({ data: { sha: "blob-2" } });
+        mockOctokit.rest.git.createTree.mockResolvedValue({
+          data: { sha: "new-tree-sha" },
+        });
+        mockOctokit.rest.git.createCommit.mockResolvedValue({
+          data: { sha: "commit-sha" },
+        });
+        mockOctokit.rest.git.updateRef.mockResolvedValue({ data: {} });
+
+        const result = await commitViaAPI({
+          token: "test-token",
+          owner: "owner",
+          repo: "repo",
+          branch: "dev",
+          message: "Test",
+          filePaths: ["a.bin", "b.bin"],
+          maxAttempts: 2,
+          baseDelayMs: 1,
+          maxDelayMs: 5,
+        });
+
+        expect(result.commitSha).toBe("commit-sha");
+        // 3 total: blob-1 (once), blob-2 (fail + retry). blob-1 not re-uploaded.
+        expect(mockOctokit.rest.git.createBlob).toHaveBeenCalledTimes(3);
+        // The single createTree carries both resolved blob SHAs.
+        expect(mockOctokit.rest.git.createTree).toHaveBeenCalledTimes(1);
+        expect(mockOctokit.rest.git.createTree.mock.calls[0][0].tree).toEqual([
+          { path: "a.bin", mode: "100644", type: "blob", sha: "blob-1" },
+          { path: "b.bin", mode: "100644", type: "blob", sha: "blob-2" },
+        ]);
+      });
+
       it("calls logger on retry", async () => {
         const logger = jest.fn();
         const fs = require("fs");
