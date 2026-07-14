@@ -35870,7 +35870,7 @@ exports.DEFAULT_MAX_ATTEMPTS = 1;
 /** Default base delay for exponential backoff, in milliseconds. */
 exports.DEFAULT_BASE_DELAY_MS = 1000;
 /** Default maximum delay cap for backoff, in milliseconds. */
-exports.DEFAULT_MAX_DELAY_MS = 30000;
+exports.DEFAULT_MAX_DELAY_MS = 30_000;
 /** HTTP-like error shape from Octokit RequestError. */
 function hasStatus(e) {
     if (typeof e !== "object" || e === null || !("status" in e)) {
