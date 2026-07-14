@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Changed
+
+- Retry for transient GitHub API failures is now applied at each individual REST call site inside `createTree` (per `createBlob` and per chained `createTree` chunk) instead of wrapping the whole multi-call tree operation; a transient mid-batch failure now retries only the failing call rather than re-uploading already-succeeded blobs and tree chunks (issue #24).
+
 ## [v0.2.0](https://github.com/vig-os/commit-action/releases/tag/v0.2.0) - 2026-03-24
 
 ### Added

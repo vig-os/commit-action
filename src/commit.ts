@@ -1,6 +1,30 @@
 import * as github from "@actions/github";
 import * as fs from "fs";
-import { withRetry } from "./retry";
+import { withRetry, RetryConfig } from "./retry";
+
+/**
+ * Retry settings threaded into individual Octokit REST call sites so a transient
+ * mid-batch failure retries only the failing call, not the whole multi-call
+ * operation (avoids re-uploading blobs/trees). Omitting it disables retries.
+ */
+export interface RetryOptions {
+  config: RetryConfig;
+  logger?: (msg: string) => void;
+}
+
+/**
+ * Runs an Octokit REST call, retrying only that call on transient errors when
+ * `retry` is provided. Without `retry`, the call runs once (no wrapping).
+ */
+function callWithRetry<T>(
+  fn: () => Promise<T>,
+  retry?: RetryOptions
+): Promise<T> {
+  if (!retry) {
+    return fn();
+  }
+  return withRetry(fn, retry.config, retry.logger);
+}
 
 export interface CommitOptions {
   token: string;
@@ -100,7 +124,8 @@ export async function createBlob(
   owner: string,
   repo: string,
   filePath: string,
-  options?: CreateBlobOptions
+  options?: CreateBlobOptions,
+  retry?: RetryOptions
 ): Promise<{ sha: string; mode: "100644" | "100755" }> {
   if (!fs.existsSync(filePath)) {
     throw new Error(`File not found: ${filePath}`);
@@ -109,12 +134,16 @@ export async function createBlob(
   const content = fs.readFileSync(filePath);
   const base64Content = content.toString("base64");
 
-  const { data: blob } = await octokit.rest.git.createBlob({
-    owner,
-    repo,
-    content: base64Content,
-    encoding: "base64",
-  });
+  const { data: blob } = await callWithRetry(
+    () =>
+      octokit.rest.git.createBlob({
+        owner,
+        repo,
+        content: base64Content,
+        encoding: "base64",
+      }),
+    retry
+  );
 
   const mode = options?.mode ?? getFileMode(filePath);
 
@@ -129,17 +158,22 @@ async function createTreeChained(
   owner: string,
   repo: string,
   initialBaseTreeSha: string,
-  entries: TreeBlobEntry[]
+  entries: TreeBlobEntry[],
+  retry?: RetryOptions
 ): Promise<string> {
   let baseTreeSha = initialBaseTreeSha;
   for (let i = 0; i < entries.length; i += TREE_ENTRY_CHUNK_SIZE) {
     const chunk = entries.slice(i, i + TREE_ENTRY_CHUNK_SIZE);
-    const { data: tree } = await octokit.rest.git.createTree({
-      owner,
-      repo,
-      base_tree: baseTreeSha,
-      tree: chunk,
-    });
+    const { data: tree } = await callWithRetry(
+      () =>
+        octokit.rest.git.createTree({
+          owner,
+          repo,
+          base_tree: baseTreeSha,
+          tree: chunk,
+        }),
+      retry
+    );
     baseTreeSha = tree.sha;
   }
   return baseTreeSha;
@@ -154,7 +188,8 @@ export async function createTree(
   owner: string,
   repo: string,
   baseTreeSha: string,
-  filePaths: string[]
+  filePaths: string[],
+  retry?: RetryOptions
 ): Promise<string> {
   const treeEntries: TreeBlobEntry[] = [];
 
@@ -165,7 +200,14 @@ export async function createTree(
     const isBinary = isBinaryFromStat(filePath, stat);
 
     if (isBinary) {
-      const result = await createBlob(octokit, owner, repo, filePath, { mode });
+      const result = await createBlob(
+        octokit,
+        owner,
+        repo,
+        filePath,
+        { mode },
+        retry
+      );
       treeEntries.push({
         path: filePath,
         mode: result.mode,
@@ -185,7 +227,14 @@ export async function createTree(
         content,
       });
     } catch {
-      const result = await createBlob(octokit, owner, repo, filePath, { mode });
+      const result = await createBlob(
+        octokit,
+        owner,
+        repo,
+        filePath,
+        { mode },
+        retry
+      );
       treeEntries.push({
         path: filePath,
         mode: result.mode,
@@ -199,7 +248,14 @@ export async function createTree(
     return baseTreeSha;
   }
 
-  return createTreeChained(octokit, owner, repo, baseTreeSha, treeEntries);
+  return createTreeChained(
+    octokit,
+    owner,
+    repo,
+    baseTreeSha,
+    treeEntries,
+    retry
+  );
 }
 
 /**
@@ -335,14 +391,16 @@ export async function commitViaAPI(
   }
 
   // For empty commits, reuse parent tree SHA; otherwise create a new tree.
+  // Retries are applied per Octokit call site inside createTree (createBlob /
+  // chained createTree), so a transient mid-batch failure retries only the
+  // failing call instead of re-running the whole multi-call operation.
   const newTreeSha =
     filePaths.length === 0
       ? baseTreeSha
-      : await withRetry(
-          () => createTree(octokit, owner, repo, baseTreeSha, filePaths),
-          retryConfig,
-          log
-        );
+      : await createTree(octokit, owner, repo, baseTreeSha, filePaths, {
+          config: retryConfig,
+          logger: log,
+        });
 
   // Create commit (automatically signed by GitHub)
   const commitSha = await withRetry(
