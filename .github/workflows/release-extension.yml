@@ -13,9 +13,11 @@
 # dist-check gate (#59) is what keeps dist/ fresh on the branch; this is the
 # release-time backstop that a merge did not slip a stale bundle through.
 #
-# Only dist/index.js is verified: it is the sole runtime artifact (action.yml ->
-# main: dist/index.js) and is build-location independent, unlike the tsc
-# declaration byproducts under dist/src/.
+# The whole dist/ tree is verified. dist/index.js is the sole runtime artifact
+# (action.yml -> main: dist/index.js) and, since #70 gitignored the declaration
+# byproducts under dist/src/, the only thing tracked under dist/ — so a tree-wide
+# check is now both deterministic and strictly stronger: it also fails on
+# uncommitted build output, not just on drift in the bundle.
 #
 # The workflow_call inputs contract is fixed — release.yml passes these by name.
 # Toolchain inputs are NOT part of that contract, so this workflow self-resolves
@@ -113,7 +115,9 @@ jobs:
           FINALIZE_SHA: ${{ inputs.finalize_sha }}
           PUBLISH_VERSION: ${{ inputs.publish_version }}
         run: |
-          if ! git diff --exit-code dist/index.js; then
-            echo "::error::dist/index.js at $FINALIZE_SHA (publishing $PUBLISH_VERSION) is stale relative to src/. Run 'just bundle', commit the refreshed dist/index.js, and re-run the release."
+          if [ -n "$(git status --porcelain -- dist/)" ]; then
+            git --no-pager diff -- dist/
+            git status --short -- dist/
+            echo "::error::dist/ at $FINALIZE_SHA (publishing $PUBLISH_VERSION) is stale relative to src/. Run 'just bundle', commit the refreshed bundle, and re-run the release."
             exit 1
           fi

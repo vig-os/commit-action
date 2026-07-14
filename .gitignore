@@ -227,10 +227,17 @@ justfile.local
 data/
 
 # Node / GitHub Action output (this is a JS action; dist/index.js IS committed —
-# only the test build output and local caches are ignored). Restored after the
-# devkit scaffold's Python-only .gitignore dropped these; see vig-os/devkit.
+# it is the runtime artifact action.yml points at). Everything else under dist/
+# is build byproduct: tsconfig.json sets outDir ./dist with declaration +
+# declarationMap, so both `npm run build` (tsc) and `npm run bundle` (ncc, which
+# emits declarations from the same tsconfig) drop .d.ts/.js/.map files under
+# dist/src/. Their .d.ts.map files embed absolute file:// paths and so differ per
+# checkout location, which is why they must never be tracked (#70). Ignore the
+# whole directory and re-admit only the bundle. Restored after the devkit
+# scaffold's Python-only .gitignore dropped these; see vig-os/devkit.
 node_modules/
-dist/__tests__
+dist/*
+!dist/index.js
 coverage/
 .nyc_output/
 *.tsbuildinfo
