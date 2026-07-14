@@ -25,10 +25,12 @@
 # setup-devkit-toolchain composite so the rebuild uses the same pinned Node as
 # the dev-shell rather than a random setup-node version.
 #
-# Scope note: only dist/index.js is verified. It is the sole runtime artifact and
-# is build-location independent; the tsc declaration byproducts under dist/src/
-# embed absolute source paths and would make a whole-tree diff non-deterministic
-# across checkout locations.
+# Scope note: the whole dist/ tree is verified. The declaration byproducts under
+# dist/src/ that once made a tree-wide diff non-deterministic across checkout
+# locations are gitignored as of #70 — `just bundle` still re-emits them here,
+# but git no longer sees them — so dist/ tracks only the real artifact. The check
+# is a `git status` on dist/ rather than a `git diff` so that it also fails on
+# build output ncc starts emitting that nobody has committed yet.
 #
 # Triggers:
 #   - Pull requests to release/** and main
@@ -107,7 +109,9 @@ jobs:
 
       - name: Verify committed bundle is fresh
         run: |
-          if ! git diff --exit-code dist/index.js; then
-            echo "::error::dist/index.js is out of date with src/. Run 'just bundle' and commit the refreshed dist/index.js."
+          if [ -n "$(git status --porcelain -- dist/)" ]; then
+            git --no-pager diff -- dist/
+            git status --short -- dist/
+            echo "::error::dist/ is out of date with src/. Run 'just bundle' and commit the refreshed bundle."
             exit 1
           fi
