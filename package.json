@@ -2,14 +2,15 @@
   "name": "commit-action",
   "version": "0.2.0",
   "description": "Commit changes via GitHub API (signed commits, bypasses rulesets)",
+  "type": "module",
   "main": "dist/commit.js",
   "scripts": {
     "build": "tsc",
     "bundle": "ncc build src/commit-runner.ts -o dist",
-    "test": "jest",
-    "test:unit": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest",
+    "test:unit": "NODE_OPTIONS=--experimental-vm-modules jest",
+    "test:watch": "NODE_OPTIONS=--experimental-vm-modules jest --watch",
+    "test:coverage": "NODE_OPTIONS=--experimental-vm-modules jest --coverage",
     "commit": "tsx src/commit-runner.ts",
     "lint": "eslint src/**/*.ts",
     "format": "prettier --write src/**/*.ts"
@@ -24,12 +25,10 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@actions/core": "^1.10.1",
-    "@actions/github": "^6.0.1"
+    "@actions/core": "^3.0.1",
+    "@actions/github": "^9.1.1"
   },
   "overrides": {
-    "@actions/http-client": "3.0.2",
-    "undici": "6.27.0",
     "minimatch@^3.0.0": "3.1.4",
     "minimatch@^9.0.0": "9.0.7"
   },
