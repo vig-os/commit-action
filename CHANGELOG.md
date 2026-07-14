@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Renovate: update `typescript` from `^5.3.2` to `^7.0.0`** ([#54](https://github.com/vig-os/commit-action/pull/54))
 - Retry for transient GitHub API failures is now applied at each individual REST call site inside `createTree` (per `createBlob` and per chained `createTree` chunk) instead of wrapping the whole multi-call tree operation; a transient mid-batch failure now retries only the failing call rather than re-uploading already-succeeded blobs and tree chunks (issue #24).
 - Hardened `createTree` against oversized commit payloads: chunk boundaries are now **payload-size-aware** — a new `createTree` request starts once a chunk approaches **`TREE_ENTRY_BYTE_LIMIT` (6 MiB)** of approximate serialized content, in addition to the existing **`TREE_ENTRY_CHUNK_SIZE` (100)** entry cap (whichever limit is hit first). Text files whose size exceeds **`INLINE_CONTENT_SIZE_LIMIT` (1 MiB)** are now uploaded via `createBlob` (base64) instead of inlined, keeping requests well under GitHub's request-body limit for very large text change sets (issue #22).
 
