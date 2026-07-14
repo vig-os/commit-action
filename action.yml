@@ -1,6 +1,6 @@
 name: "Commit via GitHub API"
 description: "Create signed commits via GitHub API (ruleset-friendly)"
-author: "Sync Issues Bot"
+author: "vigOS"
 runs:
   using: "node24"
   main: "dist/index.js"
