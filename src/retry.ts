@@ -15,10 +15,10 @@ export interface RetryConfig {
 
 /** HTTP-like error shape from Octokit RequestError. */
 function hasStatus(e: unknown): e is { status: number; message?: string } {
-  if (typeof e !== "object" || e === null || !("status" in e)) {
+  if (typeof e !== 'object' || e === null || !('status' in e)) {
     return false;
   }
-  return typeof (e as { status: unknown }).status === "number";
+  return typeof (e as { status: unknown }).status === 'number';
 }
 
 /**
@@ -30,7 +30,7 @@ function hasStatus(e: unknown): e is { status: number; message?: string } {
  */
 export function isTransientError(error: unknown): boolean {
   if (!hasStatus(error)) return false;
-  const { status, message = "" } = error;
+  const { status, message = '' } = error;
   const msg = message.toLowerCase();
 
   if (status === 404) return true;
@@ -38,9 +38,7 @@ export function isTransientError(error: unknown): boolean {
   if (status === 429) return true;
   if (status === 403) {
     return (
-      msg.includes("rate limit") ||
-      msg.includes("secondary rate limit") ||
-      msg.includes("abuse")
+      msg.includes('rate limit') || msg.includes('secondary rate limit') || msg.includes('abuse')
     );
   }
   return false;
@@ -48,28 +46,24 @@ export function isTransientError(error: unknown): boolean {
 
 /** Human-readable classification for logging. */
 export function classifyError(error: unknown): string {
-  if (!hasStatus(error)) return "non-transient";
-  const { status, message = "" } = error;
+  if (!hasStatus(error)) return 'non-transient';
+  const { status, message = '' } = error;
   const msg = message.toLowerCase();
 
-  if (status === 404) return "HTTP 404 (transient)";
+  if (status === 404) return 'HTTP 404 (transient)';
   if (status >= 500 && status < 600) return `HTTP ${status} (server error)`;
-  if (status === 429) return "HTTP 429 (rate limit)";
-  if (status === 403 && (msg.includes("rate limit") || msg.includes("abuse"))) {
-    return "rate limit (403)";
+  if (status === 429) return 'HTTP 429 (rate limit)';
+  if (status === 403 && (msg.includes('rate limit') || msg.includes('abuse'))) {
+    return 'rate limit (403)';
   }
-  return "non-transient";
+  return 'non-transient';
 }
 
 /**
  * Exponential backoff with jitter.
  * Delay = min(base * 2^attempt, maxDelayMs) + jitter (0-25% of computed).
  */
-export function calculateDelay(
-  attempt: number,
-  baseDelayMs: number,
-  maxDelayMs: number
-): number {
+export function calculateDelay(attempt: number, baseDelayMs: number, maxDelayMs: number): number {
   const raw = Math.min(baseDelayMs * Math.pow(2, attempt), maxDelayMs);
   const jitter = raw * 0.25 * Math.random();
   return Math.floor(raw + jitter);
@@ -91,10 +85,7 @@ export async function withRetry<T>(
   const baseDelayMs = config.baseDelayMs ?? DEFAULT_BASE_DELAY_MS;
   const maxDelayMs = config.maxDelayMs ?? DEFAULT_MAX_DELAY_MS;
   const log = logger ?? (() => {});
-  const maxAttempts = Math.max(
-    1,
-    Number.isFinite(config.maxAttempts) ? config.maxAttempts : 1
-  );
+  const maxAttempts = Math.max(1, Number.isFinite(config.maxAttempts) ? config.maxAttempts : 1);
 
   let lastError: unknown;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
