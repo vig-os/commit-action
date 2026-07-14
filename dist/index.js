@@ -36812,10 +36812,10 @@ const DEFAULT_BASE_DELAY_MS = 1000;
 const DEFAULT_MAX_DELAY_MS = 30_000;
 /** HTTP-like error shape from Octokit RequestError. */
 function hasStatus(e) {
-    if (typeof e !== "object" || e === null || !("status" in e)) {
+    if (typeof e !== 'object' || e === null || !('status' in e)) {
         return false;
     }
-    return typeof e.status === "number";
+    return typeof e.status === 'number';
 }
 /**
  * Returns true if the error is a transient condition worth retrying:
@@ -36827,7 +36827,7 @@ function hasStatus(e) {
 function isTransientError(error) {
     if (!hasStatus(error))
         return false;
-    const { status, message = "" } = error;
+    const { status, message = '' } = error;
     const msg = message.toLowerCase();
     if (status === 404)
         return true;
@@ -36836,28 +36836,26 @@ function isTransientError(error) {
     if (status === 429)
         return true;
     if (status === 403) {
-        return (msg.includes("rate limit") ||
-            msg.includes("secondary rate limit") ||
-            msg.includes("abuse"));
+        return (msg.includes('rate limit') || msg.includes('secondary rate limit') || msg.includes('abuse'));
     }
     return false;
 }
 /** Human-readable classification for logging. */
 function classifyError(error) {
     if (!hasStatus(error))
-        return "non-transient";
-    const { status, message = "" } = error;
+        return 'non-transient';
+    const { status, message = '' } = error;
     const msg = message.toLowerCase();
     if (status === 404)
-        return "HTTP 404 (transient)";
+        return 'HTTP 404 (transient)';
     if (status >= 500 && status < 600)
         return `HTTP ${status} (server error)`;
     if (status === 429)
-        return "HTTP 429 (rate limit)";
-    if (status === 403 && (msg.includes("rate limit") || msg.includes("abuse"))) {
-        return "rate limit (403)";
+        return 'HTTP 429 (rate limit)';
+    if (status === 403 && (msg.includes('rate limit') || msg.includes('abuse'))) {
+        return 'rate limit (403)';
     }
-    return "non-transient";
+    return 'non-transient';
 }
 /**
  * Exponential backoff with jitter.
@@ -36941,8 +36939,8 @@ function isBinaryFromStat(filePath, stat) {
     }
     const toRead = Math.min(8192, stat.size);
     const buf = Buffer.alloc(toRead);
-    const fd = external_fs_namespaceObject.openSync(filePath, "r");
-    let bytesRead = 0;
+    const fd = external_fs_namespaceObject.openSync(filePath, 'r');
+    let bytesRead;
     try {
         bytesRead = external_fs_namespaceObject.readSync(fd, buf, 0, toRead, 0);
     }
@@ -36969,7 +36967,7 @@ function isBinaryFile(filePath) {
  */
 function getFileMode(filePath) {
     const stats = external_fs_namespaceObject.statSync(filePath);
-    return stats.mode & 0o111 ? "100755" : "100644";
+    return stats.mode & 0o111 ? '100755' : '100644';
 }
 /**
  * Creates a Git blob for a file via GitHub API
@@ -36979,12 +36977,12 @@ async function createBlob(octokit, owner, repo, filePath, options, retry) {
         throw new Error(`File not found: ${filePath}`);
     }
     const content = external_fs_namespaceObject.readFileSync(filePath);
-    const base64Content = content.toString("base64");
+    const base64Content = content.toString('base64');
     const { data: blob } = await callWithRetry(() => octokit.rest.git.createBlob({
         owner,
         repo,
         content: base64Content,
-        encoding: "base64",
+        encoding: 'base64',
     }), retry);
     const mode = options?.mode ?? getFileMode(filePath);
     return { sha: blob.sha, mode };
@@ -36997,10 +36995,10 @@ async function createBlob(octokit, owner, repo, filePath, options, retry) {
  */
 function estimateEntrySize(entry) {
     const overhead = 64;
-    const pathSize = Buffer.byteLength(entry.path, "utf-8");
-    const payloadSize = "content" in entry
-        ? Buffer.byteLength(entry.content, "utf-8")
-        : Buffer.byteLength(entry.sha, "utf-8");
+    const pathSize = Buffer.byteLength(entry.path, 'utf-8');
+    const payloadSize = 'content' in entry
+        ? Buffer.byteLength(entry.content, 'utf-8')
+        : Buffer.byteLength(entry.sha, 'utf-8');
     return overhead + pathSize + payloadSize;
 }
 /**
@@ -37050,14 +37048,14 @@ async function createTree(octokit, owner, repo, baseTreeSha, filePaths, retry) {
     const treeEntries = [];
     for (const filePath of filePaths) {
         const stat = external_fs_namespaceObject.statSync(filePath);
-        const mode = stat.mode & 0o111 ? "100755" : "100644";
+        const mode = stat.mode & 0o111 ? '100755' : '100644';
         const isBinary = isBinaryFromStat(filePath, stat);
         if (isBinary) {
             const result = await createBlob(octokit, owner, repo, filePath, { mode }, retry);
             treeEntries.push({
                 path: filePath,
                 mode: result.mode,
-                type: "blob",
+                type: 'blob',
                 sha: result.sha,
             });
             continue;
@@ -37069,18 +37067,18 @@ async function createTree(octokit, owner, repo, baseTreeSha, filePaths, retry) {
             treeEntries.push({
                 path: filePath,
                 mode: result.mode,
-                type: "blob",
+                type: 'blob',
                 sha: result.sha,
             });
             continue;
         }
         const raw = external_fs_namespaceObject.readFileSync(filePath);
         try {
-            const content = new TextDecoder("utf-8", { fatal: true }).decode(raw);
+            const content = new TextDecoder('utf-8', { fatal: true }).decode(raw);
             treeEntries.push({
                 path: filePath,
                 mode,
-                type: "blob",
+                type: 'blob',
                 content,
             });
         }
@@ -37089,7 +37087,7 @@ async function createTree(octokit, owner, repo, baseTreeSha, filePaths, retry) {
             treeEntries.push({
                 path: filePath,
                 mode: result.mode,
-                type: "blob",
+                type: 'blob',
                 sha: result.sha,
             });
         }
@@ -37150,7 +37148,7 @@ async function getBranchInfo(octokit, owner, repo, branch) {
 async function commitViaAPI(options) {
     const { token, owner, repo, branch, message, filePaths, allowEmpty, baseSha, maxAttempts = 1, logger, baseDelayMs, maxDelayMs, } = options;
     if (filePaths.length === 0 && !allowEmpty) {
-        throw new Error("No files to commit");
+        throw new Error('No files to commit');
     }
     const octokit = getOctokit(token);
     const retryConfig = {
@@ -37226,11 +37224,11 @@ async function commitViaAPI(options) {
  * @returns Normalized branch/tag name
  */
 function normalizeBranch(ref) {
-    if (ref.startsWith("refs/heads/")) {
-        return ref.replace("refs/heads/", "");
+    if (ref.startsWith('refs/heads/')) {
+        return ref.replace('refs/heads/', '');
     }
-    else if (ref.startsWith("refs/")) {
-        return ref.replace(/^refs\/[^/]+\//, "");
+    else if (ref.startsWith('refs/')) {
+        return ref.replace(/^refs\/[^/]+\//, '');
     }
     return ref;
 }
@@ -37259,7 +37257,7 @@ function isGitMetadataPath(targetPath) {
     const segments = external_path_namespaceObject.normalize(targetPath)
         .split(/[\\/]+/)
         .filter((segment) => segment.length > 0);
-    return segments.includes(".git");
+    return segments.includes('.git');
 }
 function findFilesRecursively(dir) {
     const files = [];
@@ -37284,12 +37282,11 @@ async function main() {
         // Get token from environment
         const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
         if (!token) {
-            throw new Error("GITHUB_TOKEN or GH_TOKEN environment variable is required");
+            throw new Error('GITHUB_TOKEN or GH_TOKEN environment variable is required');
         }
         // Get repository info
-        const repository = process.env.GITHUB_REPOSITORY ||
-            github_context.repo.owner + "/" + github_context.repo.repo;
-        const [owner, repo] = repository.split("/");
+        const repository = process.env.GITHUB_REPOSITORY || github_context.repo.owner + '/' + github_context.repo.repo;
+        const [owner, repo] = repository.split('/');
         if (!owner || !repo) {
             throw new Error(`Invalid repository format: ${repository}. Expected "owner/repo"`);
         }
@@ -37313,12 +37310,12 @@ async function main() {
             info(`Using branch from workflow context: ${branch} (GITHUB_REF was: ${explicitRef})`);
         }
         // Get commit message
-        const message = process.env.COMMIT_MESSAGE || "chore: update files";
-        const allowEmpty = (process.env.ALLOW_EMPTY || "").toLowerCase() === "true";
+        const message = process.env.COMMIT_MESSAGE || 'chore: update files';
+        const allowEmpty = (process.env.ALLOW_EMPTY || '').toLowerCase() === 'true';
         // Get file paths from environment or detect from git status
         let filePaths = [];
         if (process.env.FILE_PATHS) {
-            const paths = process.env.FILE_PATHS.split(",")
+            const paths = process.env.FILE_PATHS.split(',')
                 .map((p) => p.trim())
                 .filter((p) => p.length > 0);
             // Expand directories to individual files
@@ -37340,11 +37337,11 @@ async function main() {
         else {
             // Detect changed files from git status
             try {
-                const gitStatus = (0,external_child_process_namespaceObject.execSync)("git status --porcelain", {
-                    encoding: "utf-8",
+                const gitStatus = (0,external_child_process_namespaceObject.execSync)('git status --porcelain', {
+                    encoding: 'utf-8',
                 });
                 const changedFiles = gitStatus
-                    .split("\n")
+                    .split('\n')
                     .filter((line) => line.trim().length > 0)
                     .map((line) => {
                     // git status format: "XY filename" where X is staged, Y is working tree
@@ -37356,18 +37353,18 @@ async function main() {
                 filePaths = changedFiles;
             }
             catch (error) {
-                throw new Error(`Failed to detect changed files from git status: ${error instanceof Error ? error.message : "Unknown error"}`);
+                throw new Error(`Failed to detect changed files from git status: ${error instanceof Error ? error.message : 'Unknown error'}`, { cause: error });
             }
         }
         if (filePaths.length === 0 && !allowEmpty) {
-            info("No files to commit");
+            info('No files to commit');
             return;
         }
         if (filePaths.length === 0 && allowEmpty) {
-            info("Creating empty commit (ALLOW_EMPTY=true)");
+            info('Creating empty commit (ALLOW_EMPTY=true)');
         }
         info(`Committing ${filePaths.length} file(s) to branch ${branch}`);
-        info(`Files: ${filePaths.join(", ")}`);
+        info(`Files: ${filePaths.join(', ')}`);
         // Get base SHA if provided (for testing or specific use cases)
         const baseSha = process.env.BASE_SHA;
         // Parse MAX_ATTEMPTS for retry (default 1 = no retries)
@@ -37399,16 +37396,16 @@ async function main() {
             logger: info,
         });
         info(`Created signed commit ${result.commitSha} via GitHub API`);
-        setOutput("commit-sha", result.commitSha);
-        setOutput("tree-sha", result.treeSha);
-        setOutput("files-committed", result.filesCommitted.toString());
+        setOutput('commit-sha', result.commitSha);
+        setOutput('tree-sha', result.treeSha);
+        setOutput('files-committed', result.filesCommitted.toString());
     }
     catch (error) {
         if (error instanceof Error) {
             setFailed(error.message);
         }
         else {
-            setFailed("Unknown error occurred");
+            setFailed('Unknown error occurred');
         }
         process.exit(1);
     }
