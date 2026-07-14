@@ -1,0 +1,126 @@
+# E2E Smoke — execute the committed bundle against the real GitHub API
+#
+# Every other check in this repo tests the SOURCE. Nothing executes the artifact
+# consumers actually run (action.yml -> main: dist/index.js): the unit tests
+# import main() directly, and the repo dogfoods commit-action at a pinned
+# released SHA, never at ./. That gap is not theoretical — the ESM migration
+# (#58) found that the CJS `require.main === module` entry guard does not survive
+# bundling to ESM, so the bundled action loaded, exited 0, and committed nothing.
+# A silent no-op, invisible to 84 passing unit tests.
+#
+# This job closes that gap. It runs the action exactly as a consumer does
+# (`uses: ./`) and asserts it really committed: a scratch branch is created, the
+# action commits a file to it via the REST flow (createBlob -> createTree ->
+# createCommit -> updateRef), and we then verify against the API that the commit
+# exists, is SIGNED, and carries the content we asked for. The branch is deleted
+# afterwards, on success or failure.
+#
+# Signing is the point of this action, and the repo's "Signed commits" ruleset
+# applies to ~ALL branches with required_signatures — so an unsigned commit would
+# be rejected by the API outright. The explicit verification check below keeps
+# that guarantee honest rather than implicit.
+#
+# Fork PRs get a read-only GITHUB_TOKEN and cannot create the scratch branch, so
+# the job is skipped there rather than failing.
+
+name: E2E Smoke
+
+on:  # yamllint disable-line rule:truthy
+  pull_request:
+    branches:
+      - dev
+      - 'release/**'
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  e2e-smoke:
+    name: E2E Smoke
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    env:
+      # No slash: the branch name is interpolated into `gh api .../commits/{ref}`
+      # paths below, where a slash would be read as a path separator.
+      SCRATCH_BRANCH: e2e-smoke-${{ github.run_id }}-${{ github.run_attempt }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+
+      # Created from the PR head, so the branch starts at a commit that already
+      # satisfies the required_signatures ruleset.
+      - name: Create scratch branch
+        run: git push origin "HEAD:refs/heads/${SCRATCH_BRANCH}"
+
+      - name: Stage a file for the action to commit
+        id: payload
+        run: |
+          set -euo pipefail
+          # Unique per run, so the assertion cannot pass on a stale blob.
+          CONTENT="e2e smoke ${GITHUB_RUN_ID}/${GITHUB_RUN_ATTEMPT} @ ${GITHUB_SHA}"
+          printf '%s\n' "$CONTENT" > e2e-smoke.txt
+          echo "content=${CONTENT}" >> "$GITHUB_OUTPUT"
+
+      # The action under test — the committed dist/ bundle, run as a consumer runs it.
+      - name: Commit via the locally built action
+        id: commit
+        uses: ./
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          TARGET_BRANCH: refs/heads/${{ env.SCRATCH_BRANCH }}
+          COMMIT_MESSAGE: "test(e2e): smoke-test the bundled action"
+          FILE_PATHS: e2e-smoke.txt
+          MAX_ATTEMPTS: "3"
+
+      - name: Verify the action actually committed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          COMMIT_SHA: ${{ steps.commit.outputs.commit-sha }}
+          FILES_COMMITTED: ${{ steps.commit.outputs.files-committed }}
+          EXPECTED_CONTENT: ${{ steps.payload.outputs.content }}
+        run: |
+          set -euo pipefail
+
+          # 1. The action must report a commit. An empty output is the silent
+          #    no-op failure mode described above: green step, nothing committed.
+          if [ -z "${COMMIT_SHA}" ]; then
+            echo "::error::Action produced no commit-sha — it exited successfully without committing."
+            exit 1
+          fi
+          echo "commit-sha=${COMMIT_SHA} files-committed=${FILES_COMMITTED}"
+
+          # 2. The scratch branch must actually point at that commit.
+          HEAD_SHA="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${SCRATCH_BRANCH}" --jq '.sha')"
+          if [ "${HEAD_SHA}" != "${COMMIT_SHA}" ]; then
+            echo "::error::Branch head ${HEAD_SHA} != reported commit ${COMMIT_SHA}."
+            exit 1
+          fi
+
+          # 3. The commit must be signed — this action exists to produce signed,
+          #    ruleset-compliant commits.
+          VERIFIED="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${COMMIT_SHA}" --jq '.commit.verification.verified')"
+          if [ "${VERIFIED}" != "true" ]; then
+            REASON="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${COMMIT_SHA}" --jq '.commit.verification.reason')"
+            echo "::error::Commit ${COMMIT_SHA} is not signed (verified=${VERIFIED}, reason=${REASON})."
+            exit 1
+          fi
+
+          # 4. The committed content must round-trip — proves the createBlob /
+          #    createTree path wrote what we asked for, not an empty tree.
+          ACTUAL="$(gh api "repos/${GITHUB_REPOSITORY}/contents/e2e-smoke.txt?ref=${COMMIT_SHA}" \
+            --jq '.content' | tr -d '\n' | base64 -d)"
+          if [ "${ACTUAL}" != "${EXPECTED_CONTENT}" ]; then
+            echo "::error::Committed content mismatch. Expected '${EXPECTED_CONTENT}', got '${ACTUAL}'."
+            exit 1
+          fi
+
+          echo "Verified: signed commit ${COMMIT_SHA} on ${SCRATCH_BRANCH} with the expected content."
+
+      - name: Delete scratch branch
+        if: always()
+        run: git push origin --delete "${SCRATCH_BRANCH}" || true
