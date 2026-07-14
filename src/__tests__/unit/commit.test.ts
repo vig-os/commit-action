@@ -1,5 +1,29 @@
-import * as github from "@actions/github";
-import {
+import { jest } from "@jest/globals";
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+type AnyFn = (...args: any[]) => any;
+
+const fsMock = {
+  existsSync: jest.fn<AnyFn>(),
+  readFileSync: jest.fn<AnyFn>(),
+  statSync: jest.fn<AnyFn>(),
+  readdirSync: jest.fn<AnyFn>(),
+  openSync: jest.fn<AnyFn>(),
+  readSync: jest.fn<AnyFn>(),
+  closeSync: jest.fn<AnyFn>(),
+};
+
+const getOctokit = jest.fn<AnyFn>();
+const context = {
+  repo: { owner: "test-owner", repo: "test-repo" },
+  ref: "refs/heads/main",
+};
+
+jest.unstable_mockModule("fs", () => ({ ...fsMock, default: fsMock }));
+jest.unstable_mockModule("@actions/github", () => ({ getOctokit, context }));
+
+// Import AFTER the mock registrations above.
+const {
   commitViaAPI,
   createBlob,
   createCommit,
@@ -11,33 +35,35 @@ import {
   TREE_ENTRY_BYTE_LIMIT,
   TREE_ENTRY_CHUNK_SIZE,
   updateBranch,
-} from "../../commit";
-
-// Mock modules
-jest.mock("@actions/github");
-jest.mock("fs");
+} = await import("../../commit.js");
 
 describe("commit", () => {
   const mockOctokit = {
     rest: {
       git: {
-        getRef: jest.fn(),
-        getCommit: jest.fn(),
-        createBlob: jest.fn(),
-        createTree: jest.fn(),
-        createCommit: jest.fn(),
-        updateRef: jest.fn(),
+        getRef: jest.fn<AnyFn>(),
+        getCommit: jest.fn<AnyFn>(),
+        createBlob: jest.fn<AnyFn>(),
+        createTree: jest.fn<AnyFn>(),
+        createCommit: jest.fn<AnyFn>(),
+        updateRef: jest.fn<AnyFn>(),
       },
     },
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (github.getOctokit as jest.Mock).mockReturnValue(mockOctokit);
-    const fs = require("fs");
-    fs.openSync.mockReturnValue(1);
-    fs.closeSync.mockImplementation(() => {});
-    fs.readSync.mockImplementation(
+    // ESM namespaces are frozen, so tests configure this shared mock object
+    // instead of reassigning `fs.*`. Reset the implementations too, so each
+    // test starts from the same blank slate the old per-test `jest.fn()`
+    // reassignment gave it (clearAllMocks only clears call records).
+    for (const fn of Object.values(fsMock)) {
+      fn.mockReset();
+    }
+    getOctokit.mockReturnValue(mockOctokit);
+    fsMock.openSync.mockReturnValue(1);
+    fsMock.closeSync.mockImplementation(() => {});
+    fsMock.readSync.mockImplementation(
       (_fd: number, buf: Buffer, offset?: number, length?: number) => {
         const off = offset ?? 0;
         const len = length ?? buf.length - off;
@@ -49,10 +75,9 @@ describe("commit", () => {
 
   describe("createBlob", () => {
     it("should create a blob for a file", async () => {
-      const fs = require("fs");
-      fs.existsSync = jest.fn().mockReturnValue(true);
-      fs.readFileSync = jest.fn().mockReturnValue(Buffer.from("test content"));
-      fs.statSync = jest.fn().mockReturnValue({ mode: 0o644 });
+      fsMock.existsSync.mockReturnValue(true);
+      fsMock.readFileSync.mockReturnValue(Buffer.from("test content"));
+      fsMock.statSync.mockReturnValue({ mode: 0o644 });
 
       mockOctokit.rest.git.createBlob.mockResolvedValue({
         data: { sha: "blob-sha-123" },
@@ -76,8 +101,7 @@ describe("commit", () => {
     });
 
     it("should throw error if file does not exist", async () => {
-      const fs = require("fs");
-      fs.existsSync = jest.fn().mockReturnValue(false);
+      fsMock.existsSync.mockReturnValue(false);
 
       await expect(
         createBlob(mockOctokit as any, "owner", "repo", "nonexistent.txt")
@@ -101,15 +125,14 @@ describe("commit", () => {
     });
 
     it("should create a tree with inline content for text files (no createBlob)", async () => {
-      const fs = require("fs");
-      fs.existsSync = jest.fn().mockReturnValue(true);
-      fs.readFileSync = jest.fn((path: string, enc?: string) => {
+      fsMock.existsSync.mockReturnValue(true);
+      fsMock.readFileSync.mockImplementation((path: string, enc?: string) => {
         if (enc === "utf-8") {
           return "content";
         }
         return Buffer.from("content");
       });
-      fs.statSync = jest.fn().mockReturnValue({ mode: 0o644, size: 7 });
+      fsMock.statSync.mockReturnValue({ mode: 0o644, size: 7 });
 
       mockOctokit.rest.git.createTree.mockResolvedValue({
         data: { sha: "tree-sha-123" },
@@ -137,18 +160,19 @@ describe("commit", () => {
     });
 
     it("should use createBlob for binary files (NUL in prefix)", async () => {
-      const fs = require("fs");
-      fs.existsSync = jest.fn().mockReturnValue(true);
-      fs.statSync = jest.fn().mockReturnValue({ mode: 0o644, size: 4 });
-      fs.readSync = jest.fn((_fd: number, buf: Buffer, offset = 0, length?: number) => {
-        const n = length ?? buf.length - offset;
-        buf[offset] = 0;
-        if (n > 1) {
-          buf.fill(0x62, offset + 1, offset + n);
+      fsMock.existsSync.mockReturnValue(true);
+      fsMock.statSync.mockReturnValue({ mode: 0o644, size: 4 });
+      fsMock.readSync.mockImplementation(
+        (_fd: number, buf: Buffer, offset = 0, length?: number) => {
+          const n = length ?? buf.length - offset;
+          buf[offset] = 0;
+          if (n > 1) {
+            buf.fill(0x62, offset + 1, offset + n);
+          }
+          return n;
         }
-        return n;
-      });
-      fs.readFileSync = jest.fn((path: string, enc?: string) => {
+      );
+      fsMock.readFileSync.mockImplementation((path: string, enc?: string) => {
         if (enc === "utf-8") {
           throw new Error("should not read binary as utf-8");
         }
@@ -183,24 +207,25 @@ describe("commit", () => {
     });
 
     it("should mix inline content and blob SHAs preserving path order", async () => {
-      const fs = require("fs");
-      fs.existsSync = jest.fn().mockReturnValue(true);
+      fsMock.existsSync.mockReturnValue(true);
       let readSyncCalls = 0;
-      fs.readSync = jest.fn((_fd: number, buf: Buffer, offset = 0, length?: number) => {
-        const n = length ?? buf.length - offset;
-        readSyncCalls += 1;
-        if (readSyncCalls === 2) {
-          buf[offset] = 0;
-          if (n > 1) {
-            buf.fill(0x64, offset + 1, offset + n);
+      fsMock.readSync.mockImplementation(
+        (_fd: number, buf: Buffer, offset = 0, length?: number) => {
+          const n = length ?? buf.length - offset;
+          readSyncCalls += 1;
+          if (readSyncCalls === 2) {
+            buf[offset] = 0;
+            if (n > 1) {
+              buf.fill(0x64, offset + 1, offset + n);
+            }
+            return n;
           }
+          buf.fill(0x63, offset, offset + n);
           return n;
         }
-        buf.fill(0x63, offset, offset + n);
-        return n;
-      });
-      fs.statSync = jest.fn().mockImplementation(() => ({ mode: 0o644, size: 8 }));
-      fs.readFileSync = jest.fn((path: string, enc?: string) => {
+      );
+      fsMock.statSync.mockImplementation(() => ({ mode: 0o644, size: 8 }));
+      fsMock.readFileSync.mockImplementation((path: string, enc?: string) => {
         if (path === "a.txt") {
           if (enc === "utf-8") {
             return "hello-a";
@@ -246,12 +271,11 @@ describe("commit", () => {
     });
 
     it("should chain createTree when more than TREE_ENTRY_CHUNK_SIZE files", async () => {
-      const fs = require("fs");
       const n = TREE_ENTRY_CHUNK_SIZE + 1;
       const paths = Array.from({ length: n }, (_, i) => `f${i}.txt`);
-      fs.existsSync = jest.fn().mockReturnValue(true);
-      fs.statSync = jest.fn().mockReturnValue({ mode: 0o644, size: 4 });
-      fs.readFileSync = jest.fn((path: string, enc?: string) => {
+      fsMock.existsSync.mockReturnValue(true);
+      fsMock.statSync.mockReturnValue({ mode: 0o644, size: 4 });
+      fsMock.readFileSync.mockImplementation((path: string, enc?: string) => {
         if (enc === "utf-8") {
           return "ab";
         }
@@ -286,12 +310,11 @@ describe("commit", () => {
     });
 
     it("should chain createTree 3 times for 201 files (2 full chunks + 1)", async () => {
-      const fs = require("fs");
       const n = TREE_ENTRY_CHUNK_SIZE * 2 + 1;
       const paths = Array.from({ length: n }, (_, i) => `f${i}.txt`);
-      fs.existsSync = jest.fn().mockReturnValue(true);
-      fs.statSync = jest.fn().mockReturnValue({ mode: 0o644, size: 4 });
-      fs.readFileSync = jest.fn((path: string, enc?: string) => {
+      fsMock.existsSync.mockReturnValue(true);
+      fsMock.statSync.mockReturnValue({ mode: 0o644, size: 4 });
+      fsMock.readFileSync.mockImplementation((path: string, enc?: string) => {
         if (enc === "utf-8") {
           return "ab";
         }
@@ -335,7 +358,6 @@ describe("commit", () => {
     });
 
     it("should start a new chunk on byte budget before the count limit is reached", async () => {
-      const fs = require("fs");
       // Each file's inline content is 2.5 MB, so 2 fit under TREE_ENTRY_BYTE_LIMIT
       // (6 MB) and the 3rd tips it over: 2 entries per chunk, well below the
       // count cap of 100. 4 files => two chunks of 2.
@@ -343,15 +365,16 @@ describe("commit", () => {
       const bigContent = "a".repeat(perFileBytes);
       const paths = Array.from({ length: 4 }, (_, i) => `big${i}.txt`);
 
-      fs.existsSync = jest.fn().mockReturnValue(true);
+      fsMock.existsSync.mockReturnValue(true);
       // Keep stat.size just under INLINE_CONTENT_SIZE_LIMIT so files stay inline
       // (a size over the limit would route them through createBlob). The chunker
       // measures the actual serialized content bytes, not stat.size, so the
       // large content still drives the byte-budget split.
-      fs.statSync = jest
-        .fn()
-        .mockReturnValue({ mode: 0o644, size: INLINE_CONTENT_SIZE_LIMIT - 1 });
-      fs.readFileSync = jest.fn((path: string, enc?: string) => {
+      fsMock.statSync.mockReturnValue({
+        mode: 0o644,
+        size: INLINE_CONTENT_SIZE_LIMIT - 1,
+      });
+      fsMock.readFileSync.mockImplementation((path: string, enc?: string) => {
         if (enc === "utf-8") {
           return bigContent;
         }
@@ -394,13 +417,13 @@ describe("commit", () => {
     });
 
     it("should route a single text file above INLINE_CONTENT_SIZE_LIMIT through createBlob", async () => {
-      const fs = require("fs");
-      fs.existsSync = jest.fn().mockReturnValue(true);
-      fs.statSync = jest
-        .fn()
-        .mockReturnValue({ mode: 0o644, size: INLINE_CONTENT_SIZE_LIMIT + 1 });
+      fsMock.existsSync.mockReturnValue(true);
+      fsMock.statSync.mockReturnValue({
+        mode: 0o644,
+        size: INLINE_CONTENT_SIZE_LIMIT + 1,
+      });
       // readSync marks the file as non-binary (no NUL); default beforeEach fill.
-      fs.readFileSync = jest.fn().mockReturnValue(Buffer.from("large text"));
+      fsMock.readFileSync.mockReturnValue(Buffer.from("large text"));
 
       mockOctokit.rest.git.createBlob.mockResolvedValue({
         data: { sha: "big-text-blob" },
@@ -438,15 +461,16 @@ describe("commit", () => {
     });
 
     it("should fall back to createBlob for non-UTF-8 text files (no NUL in prefix)", async () => {
-      const fs = require("fs");
-      fs.existsSync = jest.fn().mockReturnValue(true);
-      fs.statSync = jest.fn().mockReturnValue({ mode: 0o644, size: 4 });
-      fs.readSync = jest.fn((_fd: number, buf: Buffer, offset = 0, length?: number) => {
-        const n = length ?? buf.length - offset;
-        buf.fill(0xc0, offset, offset + n);
-        return n;
-      });
-      fs.readFileSync = jest.fn((path: string) => {
+      fsMock.existsSync.mockReturnValue(true);
+      fsMock.statSync.mockReturnValue({ mode: 0o644, size: 4 });
+      fsMock.readSync.mockImplementation(
+        (_fd: number, buf: Buffer, offset = 0, length?: number) => {
+          const n = length ?? buf.length - offset;
+          buf.fill(0xc0, offset, offset + n);
+          return n;
+        }
+      );
+      fsMock.readFileSync.mockImplementation(() => {
         return Buffer.from([0x80, 0x81]);
       });
 
@@ -484,47 +508,49 @@ describe("commit", () => {
 
   describe("isBinaryFile", () => {
     it("returns false when prefix has no NUL byte", () => {
-      const fs = require("fs");
-      fs.existsSync = jest.fn().mockReturnValue(true);
-      fs.statSync = jest.fn().mockReturnValue({ size: 5 });
-      fs.readSync = jest.fn((_fd: number, buf: Buffer, offset = 0, length?: number) => {
-        const n = length ?? buf.length - offset;
-        Buffer.from("hello").copy(buf, offset, 0, n);
-        return n;
-      });
+      fsMock.existsSync.mockReturnValue(true);
+      fsMock.statSync.mockReturnValue({ size: 5 });
+      fsMock.readSync.mockImplementation(
+        (_fd: number, buf: Buffer, offset = 0, length?: number) => {
+          const n = length ?? buf.length - offset;
+          Buffer.from("hello").copy(buf, offset, 0, n);
+          return n;
+        }
+      );
 
       expect(isBinaryFile("x.txt")).toBe(false);
     });
 
     it("returns true when NUL appears in scanned prefix", () => {
-      const fs = require("fs");
-      fs.existsSync = jest.fn().mockReturnValue(true);
-      fs.statSync = jest.fn().mockReturnValue({ size: 10 });
-      fs.readSync = jest.fn((_fd: number, buf: Buffer, offset = 0, length?: number) => {
-        const n = length ?? buf.length - offset;
-        buf.fill(0x65, offset, offset + n);
-        buf[offset + 2] = 0;
-        return n;
-      });
+      fsMock.existsSync.mockReturnValue(true);
+      fsMock.statSync.mockReturnValue({ size: 10 });
+      fsMock.readSync.mockImplementation(
+        (_fd: number, buf: Buffer, offset = 0, length?: number) => {
+          const n = length ?? buf.length - offset;
+          buf.fill(0x65, offset, offset + n);
+          buf[offset + 2] = 0;
+          return n;
+        }
+      );
 
       expect(isBinaryFile("x.bin")).toBe(true);
     });
 
     it("throws when file is missing", () => {
-      const fs = require("fs");
-      fs.existsSync = jest.fn().mockReturnValue(false);
+      fsMock.existsSync.mockReturnValue(false);
       expect(() => isBinaryFile("missing")).toThrow("File not found");
     });
 
     it("returns false when readSync returns fewer bytes than requested (avoids false positive from zero-filled buffer)", () => {
-      const fs = require("fs");
-      fs.existsSync = jest.fn().mockReturnValue(true);
-      fs.statSync = jest.fn().mockReturnValue({ size: 100 });
-      fs.readSync = jest.fn((_fd: number, buf: Buffer, offset = 0, length?: number) => {
-        const n = length ?? buf.length - offset;
-        Buffer.from("abc").copy(buf, offset, 0, Math.min(3, n));
-        return 3;
-      });
+      fsMock.existsSync.mockReturnValue(true);
+      fsMock.statSync.mockReturnValue({ size: 100 });
+      fsMock.readSync.mockImplementation(
+        (_fd: number, buf: Buffer, offset = 0, length?: number) => {
+          const n = length ?? buf.length - offset;
+          Buffer.from("abc").copy(buf, offset, 0, Math.min(3, n));
+          return 3;
+        }
+      );
 
       expect(isBinaryFile("x.txt")).toBe(false);
     });
@@ -532,14 +558,12 @@ describe("commit", () => {
 
   describe("getFileMode", () => {
     it("returns 100644 for non-executable file", () => {
-      const fs = require("fs");
-      fs.statSync = jest.fn().mockReturnValue({ mode: 0o644 });
+      fsMock.statSync.mockReturnValue({ mode: 0o644 });
       expect(getFileMode("f")).toBe("100644");
     });
 
     it("returns 100755 when executable bit is set", () => {
-      const fs = require("fs");
-      fs.statSync = jest.fn().mockReturnValue({ mode: 0o755 });
+      fsMock.statSync.mockReturnValue({ mode: 0o755 });
       expect(getFileMode("run")).toBe("100755");
     });
   });
@@ -616,15 +640,14 @@ describe("commit", () => {
 
   describe("commitViaAPI", () => {
     it("should commit changes end-to-end", async () => {
-      const fs = require("fs");
-      fs.existsSync = jest.fn().mockReturnValue(true);
-      fs.readFileSync = jest.fn((path: string, enc?: string) => {
+      fsMock.existsSync.mockReturnValue(true);
+      fsMock.readFileSync.mockImplementation((path: string, enc?: string) => {
         if (enc === "utf-8") {
           return "content";
         }
         return Buffer.from("content");
       });
-      fs.statSync = jest.fn().mockReturnValue({ mode: 0o644, size: 7 });
+      fsMock.statSync.mockReturnValue({ mode: 0o644, size: 7 });
 
       // Mock branch info
       mockOctokit.rest.git.getRef.mockResolvedValue({
@@ -663,15 +686,14 @@ describe("commit", () => {
     });
 
     it("should use provided baseSha if given", async () => {
-      const fs = require("fs");
-      fs.existsSync = jest.fn().mockReturnValue(true);
-      fs.readFileSync = jest.fn((path: string, enc?: string) => {
+      fsMock.existsSync.mockReturnValue(true);
+      fsMock.readFileSync.mockImplementation((path: string, enc?: string) => {
         if (enc === "utf-8") {
           return "content";
         }
         return Buffer.from("content");
       });
-      fs.statSync = jest.fn().mockReturnValue({ mode: 0o644, size: 7 });
+      fsMock.statSync.mockReturnValue({ mode: 0o644, size: 7 });
 
       // Mock commit fetch for baseSha
       mockOctokit.rest.git.getCommit.mockResolvedValue({
@@ -764,15 +786,14 @@ describe("commit", () => {
     });
 
     it("should commit normally when allowEmpty is true and files are provided", async () => {
-      const fs = require("fs");
-      fs.existsSync = jest.fn().mockReturnValue(true);
-      fs.readFileSync = jest.fn((path: string, enc?: string) => {
+      fsMock.existsSync.mockReturnValue(true);
+      fsMock.readFileSync.mockImplementation((path: string, enc?: string) => {
         if (enc === "utf-8") {
           return "content";
         }
         return Buffer.from("content");
       });
-      fs.statSync = jest.fn().mockReturnValue({ mode: 0o644, size: 7 });
+      fsMock.statSync.mockReturnValue({ mode: 0o644, size: 7 });
 
       // Mock branch info
       mockOctokit.rest.git.getRef.mockResolvedValue({
@@ -833,12 +854,11 @@ describe("commit", () => {
       });
 
       it("with maxAttempts 3 retries transient 404 on getRef and succeeds on second attempt", async () => {
-        const fs = require("fs");
-        fs.existsSync = jest.fn().mockReturnValue(true);
-        fs.readFileSync = jest.fn((path: string, enc?: string) =>
+        fsMock.existsSync.mockReturnValue(true);
+        fsMock.readFileSync.mockImplementation((path: string, enc?: string) =>
           enc === "utf-8" ? "x" : Buffer.from("x")
         );
-        fs.statSync = jest.fn().mockReturnValue({ mode: 0o644, size: 1 });
+        fsMock.statSync.mockReturnValue({ mode: 0o644, size: 1 });
 
         mockOctokit.rest.git.getRef
           .mockRejectedValueOnce({ status: 404 })
@@ -873,12 +893,11 @@ describe("commit", () => {
       });
 
       it("with maxAttempts 2 retries 503 on createCommit and succeeds", async () => {
-        const fs = require("fs");
-        fs.existsSync = jest.fn().mockReturnValue(true);
-        fs.readFileSync = jest.fn((path: string, enc?: string) =>
+        fsMock.existsSync.mockReturnValue(true);
+        fsMock.readFileSync.mockImplementation((path: string, enc?: string) =>
           enc === "utf-8" ? "x" : Buffer.from("x")
         );
-        fs.statSync = jest.fn().mockReturnValue({ mode: 0o644, size: 1 });
+        fsMock.statSync.mockReturnValue({ mode: 0o644, size: 1 });
 
         mockOctokit.rest.git.getRef.mockResolvedValue({
           data: { object: { sha: "base-sha" } },
@@ -911,12 +930,11 @@ describe("commit", () => {
       });
 
       it("exhausts attempts and surfaces original error", async () => {
-        const fs = require("fs");
-        fs.existsSync = jest.fn().mockReturnValue(true);
-        fs.readFileSync = jest.fn((path: string, enc?: string) =>
+        fsMock.existsSync.mockReturnValue(true);
+        fsMock.readFileSync.mockImplementation((path: string, enc?: string) =>
           enc === "utf-8" ? "x" : Buffer.from("x")
         );
-        fs.statSync = jest.fn().mockReturnValue({ mode: 0o644, size: 1 });
+        fsMock.statSync.mockReturnValue({ mode: 0o644, size: 1 });
 
         mockOctokit.rest.git.getRef.mockRejectedValue({ status: 404 });
         mockOctokit.rest.git.getCommit.mockResolvedValue({
@@ -941,12 +959,11 @@ describe("commit", () => {
       });
 
       it("retries only the failing createTree chunk, not already-succeeded blobs/trees", async () => {
-        const fs = require("fs");
         const n = TREE_ENTRY_CHUNK_SIZE + 1;
         const paths = Array.from({ length: n }, (_, i) => `f${i}.txt`);
-        fs.existsSync = jest.fn().mockReturnValue(true);
-        fs.statSync = jest.fn().mockReturnValue({ mode: 0o644, size: 2 });
-        fs.readFileSync = jest.fn((path: string, enc?: string) =>
+        fsMock.existsSync.mockReturnValue(true);
+        fsMock.statSync.mockReturnValue({ mode: 0o644, size: 2 });
+        fsMock.readFileSync.mockImplementation((path: string, enc?: string) =>
           enc === "utf-8" ? "ab" : Buffer.from("ab")
         );
 
@@ -997,11 +1014,10 @@ describe("commit", () => {
       });
 
       it("retries a failing createBlob without re-uploading earlier blobs", async () => {
-        const fs = require("fs");
-        fs.existsSync = jest.fn().mockReturnValue(true);
-        fs.statSync = jest.fn().mockReturnValue({ mode: 0o644, size: 4 });
+        fsMock.existsSync.mockReturnValue(true);
+        fsMock.statSync.mockReturnValue({ mode: 0o644, size: 4 });
         // Both files are binary (NUL in prefix) -> each needs createBlob.
-        fs.readSync = jest.fn(
+        fsMock.readSync.mockImplementation(
           (_fd: number, buf: Buffer, offset = 0, length?: number) => {
             const nn = length ?? buf.length - offset;
             buf[offset] = 0;
@@ -1011,7 +1027,7 @@ describe("commit", () => {
             return nn;
           }
         );
-        fs.readFileSync = jest.fn(() => Buffer.from([0, 1, 2, 3]));
+        fsMock.readFileSync.mockImplementation(() => Buffer.from([0, 1, 2, 3]));
 
         mockOctokit.rest.git.getRef.mockResolvedValue({
           data: { object: { sha: "base-sha" } },
@@ -1056,13 +1072,12 @@ describe("commit", () => {
       });
 
       it("calls logger on retry", async () => {
-        const logger = jest.fn();
-        const fs = require("fs");
-        fs.existsSync = jest.fn().mockReturnValue(true);
-        fs.readFileSync = jest.fn((path: string, enc?: string) =>
+        const logger = jest.fn<AnyFn>();
+        fsMock.existsSync.mockReturnValue(true);
+        fsMock.readFileSync.mockImplementation((path: string, enc?: string) =>
           enc === "utf-8" ? "x" : Buffer.from("x")
         );
-        fs.statSync = jest.fn().mockReturnValue({ mode: 0o644, size: 1 });
+        fsMock.statSync.mockReturnValue({ mode: 0o644, size: 1 });
 
         mockOctokit.rest.git.getRef
           .mockRejectedValueOnce({ status: 404 })

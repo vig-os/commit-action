@@ -18,7 +18,8 @@ import * as github from "@actions/github";
 import { execSync } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
-import { commitViaAPI } from "./commit";
+import { pathToFileURL } from "url";
+import { commitViaAPI } from "./commit.js";
 
 /**
  * Normalizes a Git reference to a branch name
@@ -240,7 +241,11 @@ export async function main(): Promise<void> {
   }
 }
 
-// Run if executed directly
-if (require.main === module) {
-  main();
+// Run if executed directly (rather than imported by a test or a consumer).
+// The CommonJS `require.main === module` idiom is not available under ESM; the
+// equivalent is to compare this module's URL against the entry point Node was
+// invoked with. process.argv[1] is absent when Node is started with -e/--eval.
+const entrypoint = process.argv[1];
+if (entrypoint && import.meta.url === pathToFileURL(entrypoint).href) {
+  void main();
 }

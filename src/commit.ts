@@ -1,6 +1,6 @@
 import * as github from "@actions/github";
 import * as fs from "fs";
-import { withRetry, RetryConfig } from "./retry";
+import { withRetry, RetryConfig } from "./retry.js";
 
 /**
  * Retry settings threaded into individual Octokit REST call sites so a transient

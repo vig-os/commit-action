@@ -1,20 +1,48 @@
-import * as core from "@actions/core";
-import { execSync } from "child_process";
-import * as github from "@actions/github";
-import { commitViaAPI } from "../../commit";
-import { main, normalizeBranch, resolveBranch } from "../../commit-runner";
+import { jest } from "@jest/globals";
 
-jest.mock("@actions/core", () => ({
-  info: jest.fn(),
-  setOutput: jest.fn(),
-  setFailed: jest.fn(),
+/* eslint-disable @typescript-eslint/no-explicit-any */
+type AnyFn = (...args: any[]) => any;
+
+const core = {
+  info: jest.fn<AnyFn>(),
+  setOutput: jest.fn<AnyFn>(),
+  setFailed: jest.fn<AnyFn>(),
+};
+const execSync = jest.fn<AnyFn>();
+const commitViaAPI = jest.fn<AnyFn>();
+
+const fsMock = {
+  existsSync: jest.fn<AnyFn>(),
+  readFileSync: jest.fn<AnyFn>(),
+  statSync: jest.fn<AnyFn>(),
+  readdirSync: jest.fn<AnyFn>(),
+  openSync: jest.fn<AnyFn>(),
+  readSync: jest.fn<AnyFn>(),
+  closeSync: jest.fn<AnyFn>(),
+};
+
+// `context` is MUTATED by some tests, so keep it as a plain mutable object.
+const context = {
+  repo: { owner: "test-owner", repo: "test-repo" },
+  ref: "refs/heads/main",
+};
+
+jest.unstable_mockModule("@actions/core", () => core);
+jest.unstable_mockModule("child_process", () => ({
+  execSync,
+  default: { execSync },
 }));
-jest.mock("child_process", () => ({
-  execSync: jest.fn(),
+jest.unstable_mockModule("fs", () => ({ ...fsMock, default: fsMock }));
+jest.unstable_mockModule("@actions/github", () => ({
+  getOctokit: jest.fn<AnyFn>(),
+  context,
 }));
-jest.mock("../../commit", () => ({
-  commitViaAPI: jest.fn(),
-}));
+jest.unstable_mockModule("../../commit.js", () => ({ commitViaAPI }));
+
+// Import AFTER the mock registrations above.
+const { main, normalizeBranch, resolveBranch } = await import(
+  "../../commit-runner.js"
+);
 
 describe("commit-runner", () => {
   describe("normalizeBranch", () => {
@@ -160,8 +188,8 @@ describe("commit-runner", () => {
         TARGET_BRANCH: "refs/heads/main",
         COMMIT_MESSAGE: "Test commit",
       };
-      (github.context as any).ref = "refs/heads/main";
-      (commitViaAPI as jest.Mock).mockResolvedValue({
+      context.ref = "refs/heads/main";
+      commitViaAPI.mockResolvedValue({
         commitSha: "commit-sha",
         treeSha: "tree-sha",
         filesCommitted: 0,
@@ -176,9 +204,8 @@ describe("commit-runner", () => {
       process.env.ALLOW_EMPTY = "true";
       process.env.FILE_PATHS = "file.txt";
 
-      const fs = jest.requireMock("fs");
-      fs.existsSync = jest.fn().mockReturnValue(true);
-      fs.statSync = jest.fn().mockReturnValue({ isDirectory: () => false });
+      fsMock.existsSync.mockReturnValue(true);
+      fsMock.statSync.mockReturnValue({ isDirectory: () => false });
 
       await main();
 
@@ -192,18 +219,20 @@ describe("commit-runner", () => {
     it("should not exit early when no files and ALLOW_EMPTY=true", async () => {
       process.env.ALLOW_EMPTY = "true";
       delete process.env.FILE_PATHS;
-      (execSync as jest.Mock).mockReturnValue("");
+      execSync.mockReturnValue("");
 
       await main();
 
       expect(commitViaAPI).toHaveBeenCalled();
-      expect(core.info).toHaveBeenCalledWith("Creating empty commit (ALLOW_EMPTY=true)");
+      expect(core.info).toHaveBeenCalledWith(
+        "Creating empty commit (ALLOW_EMPTY=true)"
+      );
     });
 
     it("should return early when no files and ALLOW_EMPTY is unset", async () => {
       delete process.env.ALLOW_EMPTY;
       delete process.env.FILE_PATHS;
-      (execSync as jest.Mock).mockReturnValue("");
+      execSync.mockReturnValue("");
 
       await main();
 
@@ -216,9 +245,8 @@ describe("commit-runner", () => {
       process.env.ALLOW_EMPTY = "TRUE";
       process.env.FILE_PATHS = "file.txt";
 
-      const fs = jest.requireMock("fs");
-      fs.existsSync = jest.fn().mockReturnValue(true);
-      fs.statSync = jest.fn().mockReturnValue({ isDirectory: () => false });
+      fsMock.existsSync.mockReturnValue(true);
+      fsMock.statSync.mockReturnValue({ isDirectory: () => false });
 
       await main();
 
@@ -242,8 +270,8 @@ describe("commit-runner", () => {
         TARGET_BRANCH: "refs/heads/main",
         COMMIT_MESSAGE: "Test commit",
       };
-      (github.context as any).ref = "refs/heads/main";
-      (commitViaAPI as jest.Mock).mockResolvedValue({
+      context.ref = "refs/heads/main";
+      commitViaAPI.mockResolvedValue({
         commitSha: "commit-sha",
         treeSha: "tree-sha",
         filesCommitted: 0,
@@ -257,16 +285,15 @@ describe("commit-runner", () => {
     it("should exclude .git directory contents when expanding FILE_PATHS directories", async () => {
       process.env.FILE_PATHS = ".";
 
-      const fs = jest.requireMock("fs");
-      fs.existsSync = jest.fn().mockReturnValue(true);
-      fs.readdirSync = jest.fn((dir: string) => {
+      fsMock.existsSync.mockReturnValue(true);
+      fsMock.readdirSync.mockImplementation((dir: string) => {
         if (dir === ".") return ["src", ".git", "README.md"];
         if (dir === "src") return ["index.ts"];
         if (dir === ".git") return ["config", "objects"];
         if (dir === ".git/objects") return ["abc123"];
         return [];
       });
-      fs.statSync = jest.fn((targetPath: string) => {
+      fsMock.statSync.mockImplementation((targetPath: string) => {
         const isDirectory =
           targetPath === "." ||
           targetPath === "src" ||
@@ -290,9 +317,8 @@ describe("commit-runner", () => {
     it("should ignore direct .git paths in FILE_PATHS while keeping normal paths", async () => {
       process.env.FILE_PATHS = ".git,.git/config,README.md,src/index.ts";
 
-      const fs = jest.requireMock("fs");
-      fs.existsSync = jest.fn().mockReturnValue(true);
-      fs.statSync = jest.fn().mockReturnValue({
+      fsMock.existsSync.mockReturnValue(true);
+      fsMock.statSync.mockReturnValue({
         isDirectory: () => false,
       });
 
@@ -319,15 +345,14 @@ describe("commit-runner", () => {
         COMMIT_MESSAGE: "Test commit",
         FILE_PATHS: "file.txt",
       };
-      (github.context as any).ref = "refs/heads/main";
-      (commitViaAPI as jest.Mock).mockResolvedValue({
+      context.ref = "refs/heads/main";
+      commitViaAPI.mockResolvedValue({
         commitSha: "commit-sha",
         treeSha: "tree-sha",
         filesCommitted: 1,
       });
-      const fs = jest.requireMock("fs");
-      fs.existsSync = jest.fn().mockReturnValue(true);
-      fs.statSync = jest.fn().mockReturnValue({ isDirectory: () => false });
+      fsMock.existsSync.mockReturnValue(true);
+      fsMock.statSync.mockReturnValue({ isDirectory: () => false });
     });
 
     afterAll(() => {

@@ -1,9 +1,13 @@
+import { jest } from "@jest/globals";
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+type AnyFn = (...args: any[]) => any;
 import {
   calculateDelay,
   classifyError,
   isTransientError,
   withRetry,
-} from "../../retry";
+} from "../../retry.js";
 
 describe("retry", () => {
   describe("isTransientError", () => {
@@ -101,14 +105,14 @@ describe("retry", () => {
 
   describe("withRetry", () => {
     it("resolves immediately on success with single call", async () => {
-      const fn = jest.fn().mockResolvedValue("ok");
+      const fn = jest.fn<AnyFn>().mockResolvedValue("ok");
       const result = await withRetry(fn, { maxAttempts: 3 });
       expect(result).toBe("ok");
       expect(fn).toHaveBeenCalledTimes(1);
     });
 
     it("does not retry when maxAttempts is 1", async () => {
-      const fn = jest.fn().mockRejectedValue({ status: 404 });
+      const fn = jest.fn<AnyFn>().mockRejectedValue({ status: 404 });
       await expect(withRetry(fn, { maxAttempts: 1 })).rejects.toEqual({
         status: 404,
       });
@@ -116,13 +120,13 @@ describe("retry", () => {
     });
 
     it("treats maxAttempts 0 or negative as 1 (single attempt)", async () => {
-      const fn404 = jest.fn().mockRejectedValue({ status: 404 });
+      const fn404 = jest.fn<AnyFn>().mockRejectedValue({ status: 404 });
       await expect(withRetry(fn404, { maxAttempts: 0 })).rejects.toEqual({
         status: 404,
       });
       expect(fn404).toHaveBeenCalledTimes(1);
 
-      const fn503 = jest.fn().mockRejectedValue({ status: 503 });
+      const fn503 = jest.fn<AnyFn>().mockRejectedValue({ status: 503 });
       await expect(withRetry(fn503, { maxAttempts: -1 })).rejects.toMatchObject({
         status: 503,
       });
@@ -130,8 +134,7 @@ describe("retry", () => {
     });
 
     it("retries transient errors up to maxAttempts and succeeds on later attempt", async () => {
-      const fn = jest
-        .fn()
+      const fn = jest.fn<AnyFn>()
         .mockRejectedValueOnce({ status: 404 })
         .mockResolvedValueOnce("ok");
       jest.useFakeTimers();
@@ -146,7 +149,7 @@ describe("retry", () => {
     });
 
     it("throws after exhausting all attempts on persistent transient error", async () => {
-      const fn = jest.fn().mockRejectedValue({ status: 503 });
+      const fn = jest.fn<AnyFn>().mockRejectedValue({ status: 503 });
       const resultPromise = withRetry(fn, {
         maxAttempts: 3,
         baseDelayMs: 1,
@@ -158,7 +161,7 @@ describe("retry", () => {
     });
 
     it("does not retry non-transient errors, throws immediately", async () => {
-      const fn = jest.fn().mockRejectedValue({ status: 422 });
+      const fn = jest.fn<AnyFn>().mockRejectedValue({ status: 422 });
       await expect(withRetry(fn, { maxAttempts: 3 })).rejects.toEqual({
         status: 422,
       });
@@ -166,9 +169,8 @@ describe("retry", () => {
     });
 
     it("calls logger with attempt number, classification, and delay", async () => {
-      const logger = jest.fn();
-      const fn = jest
-        .fn()
+      const logger = jest.fn<AnyFn>();
+      const fn = jest.fn<AnyFn>()
         .mockRejectedValueOnce({ status: 404 })
         .mockResolvedValueOnce("ok");
       jest.useFakeTimers();
@@ -184,8 +186,7 @@ describe("retry", () => {
     });
 
     it("applies backoff delay between attempts", async () => {
-      const fn = jest
-        .fn()
+      const fn = jest.fn<AnyFn>()
         .mockRejectedValueOnce({ status: 404 })
         .mockRejectedValueOnce({ status: 404 })
         .mockResolvedValueOnce("ok");

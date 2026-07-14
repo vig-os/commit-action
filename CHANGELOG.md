@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+
+- **Migrated the action to ESM.** The `@actions/*` toolkit went ESM-only at its next major (no `require` condition in its `exports` map at all), so `@actions/core` v3, `@actions/github` v9 and `@actions/http-client` v4 were unlandable individually and had to move together (issues #49, #50, #51). The package is now `"type": "module"`, TypeScript resolves with `module`/`moduleResolution: nodenext`, relative imports carry explicit `.js` extensions, and `ncc` emits an ESM bundle (plus a small `dist/package.json` declaring the bundle's module type, now tracked alongside `dist/index.js`). Jest runs in ESM mode: the module mocks moved from `jest.mock` + a `__mocks__` manual mock to `jest.unstable_mockModule` with dynamic imports, and the old `src/__tests__/setup.ts` is gone. All 84 tests are preserved unchanged (issue #58).
+- Dropping the classic `moduleResolution: node` also fixed a **silent type hole**: classic resolution ignores `exports` maps, so `@octokit/core/types` never resolved and every `octokit.rest.*` call in `src/commit.ts` degraded to `any` — the entire signed-commit REST flow was unchecked. Those calls are now type-checked against real Octokit types. This additionally unblocks TypeScript 7, which removes `moduleResolution: node` outright (issue #54).
+- Removed the `@actions/http-client` and `undici` `overrides` pins. The `http-client` pin (`3.0.2`) was what actually blocked the v4 major, and the `undici` pin is now redundant: `@actions/http-client` v4 depends on `undici: ^6.23.0`, which resolves to the same `6.27.0` the pin was added to force (`npm audit` reports no runtime vulnerabilities).
+
 ### Added
 
 - CI now gates the committed ncc bundle against source drift so a stale `dist/index.js` can never reach a tag. A new consumer-owned `dist-check` workflow rebuilds the bundle on every PR to `release/**`/`main` and fails when the committed `dist/index.js` differs, and the release-time `release-extension` hook re-verifies the finalized commit before it is tagged (rolling the release back on drift). Both rebuild with the pinned dev-shell toolchain (issue #59). The gate is deliberately scoped to the release boundary — `dev` is not gated, since nothing ships from `dev` and gating it would fail every Renovate runtime-dependency bump (issue #71).
