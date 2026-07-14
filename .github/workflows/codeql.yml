@@ -20,8 +20,16 @@ on:  # yamllint disable-line rule:truthy
   push:
     branches:
       - main
+    # LOCAL FIX (#61): filter on TypeScript paths, not Python. The devkit
+    # scaffold ships a Python-flavored CodeQL workflow; this repo is a
+    # TypeScript action (cf5e93f switched the language matrix but left this
+    # filter on '**.py', so push-to-main analysis never fired). Filed upstream
+    # as vig-os/devkit#1027 / vig-os/devkit#1039 (language-aware scaffold); drop
+    # this divergence once the scaffold carries the fix.
     paths:
-      - '**.py'
+      - '**.ts'
+      - '**.js'
+      - 'package*.json'
       - '.github/workflows/**'
   schedule:
     - cron: '15 2 * * 1'  # Monday at 02:15 UTC
