@@ -1,169 +1,193 @@
-import * as core from "@actions/core";
-import { execSync } from "child_process";
-import * as github from "@actions/github";
-import { commitViaAPI } from "../../commit";
-import { main, normalizeBranch, resolveBranch } from "../../commit-runner";
+import { jest } from '@jest/globals';
 
-jest.mock("@actions/core", () => ({
-  info: jest.fn(),
-  setOutput: jest.fn(),
-  setFailed: jest.fn(),
-}));
-jest.mock("child_process", () => ({
-  execSync: jest.fn(),
-}));
-jest.mock("../../commit", () => ({
-  commitViaAPI: jest.fn(),
-}));
+/* eslint-disable @typescript-eslint/no-explicit-any */
+type AnyFn = (...args: any[]) => any;
 
-describe("commit-runner", () => {
-  describe("normalizeBranch", () => {
-    it("should normalize refs/heads/main to main", () => {
-      expect(normalizeBranch("refs/heads/main")).toBe("main");
+const core = {
+  info: jest.fn<AnyFn>(),
+  setOutput: jest.fn<AnyFn>(),
+  setFailed: jest.fn<AnyFn>(),
+};
+const execSync = jest.fn<AnyFn>();
+const commitViaAPI = jest.fn<AnyFn>();
+
+const fsMock = {
+  existsSync: jest.fn<AnyFn>(),
+  readFileSync: jest.fn<AnyFn>(),
+  statSync: jest.fn<AnyFn>(),
+  readdirSync: jest.fn<AnyFn>(),
+  openSync: jest.fn<AnyFn>(),
+  readSync: jest.fn<AnyFn>(),
+  closeSync: jest.fn<AnyFn>(),
+};
+
+// `context` is MUTATED by some tests, so keep it as a plain mutable object.
+const context = {
+  repo: { owner: 'test-owner', repo: 'test-repo' },
+  ref: 'refs/heads/main',
+};
+
+jest.unstable_mockModule('@actions/core', () => core);
+jest.unstable_mockModule('child_process', () => ({
+  execSync,
+  default: { execSync },
+}));
+jest.unstable_mockModule('fs', () => ({ ...fsMock, default: fsMock }));
+jest.unstable_mockModule('@actions/github', () => ({
+  getOctokit: jest.fn<AnyFn>(),
+  context,
+}));
+jest.unstable_mockModule('../../commit.js', () => ({ commitViaAPI }));
+
+// Import AFTER the mock registrations above.
+const { main, normalizeBranch, resolveBranch } = await import('../../commit-runner.js');
+
+describe('commit-runner', () => {
+  describe('normalizeBranch', () => {
+    it('should normalize refs/heads/main to main', () => {
+      expect(normalizeBranch('refs/heads/main')).toBe('main');
     });
 
-    it("should normalize refs/heads/dev to dev", () => {
-      expect(normalizeBranch("refs/heads/dev")).toBe("dev");
+    it('should normalize refs/heads/dev to dev', () => {
+      expect(normalizeBranch('refs/heads/dev')).toBe('dev');
     });
 
-    it("should normalize refs/tags/v1.0.0 to v1.0.0", () => {
-      expect(normalizeBranch("refs/tags/v1.0.0")).toBe("v1.0.0");
+    it('should normalize refs/tags/v1.0.0 to v1.0.0', () => {
+      expect(normalizeBranch('refs/tags/v1.0.0')).toBe('v1.0.0');
     });
 
-    it("should normalize refs/remotes/origin/main to origin/main", () => {
-      expect(normalizeBranch("refs/remotes/origin/main")).toBe("origin/main");
+    it('should normalize refs/remotes/origin/main to origin/main', () => {
+      expect(normalizeBranch('refs/remotes/origin/main')).toBe('origin/main');
     });
 
     it("should return branch name as-is if it doesn't start with refs/", () => {
-      expect(normalizeBranch("main")).toBe("main");
-      expect(normalizeBranch("dev")).toBe("dev");
+      expect(normalizeBranch('main')).toBe('main');
+      expect(normalizeBranch('dev')).toBe('dev');
     });
 
-    it("should handle branch names with slashes", () => {
-      expect(normalizeBranch("refs/heads/feature/new-feature")).toBe(
-        "feature/new-feature"
-      );
+    it('should handle branch names with slashes', () => {
+      expect(normalizeBranch('refs/heads/feature/new-feature')).toBe('feature/new-feature');
     });
   });
 
-  describe("resolveBranch", () => {
-    const defaultContextRef = "refs/heads/dev";
+  describe('resolveBranch', () => {
+    const defaultContextRef = 'refs/heads/dev';
 
-    it("should prioritize TARGET_BRANCH when set", () => {
+    it('should prioritize TARGET_BRANCH when set', () => {
       const result = resolveBranch({
-        targetBranch: "refs/heads/main",
-        githubRef: "refs/heads/staging",
+        targetBranch: 'refs/heads/main',
+        githubRef: 'refs/heads/staging',
         contextRef: defaultContextRef,
       });
-      expect(result).toBe("main");
+      expect(result).toBe('main');
     });
 
-    it("should normalize TARGET_BRANCH without refs/heads/ prefix", () => {
+    it('should normalize TARGET_BRANCH without refs/heads/ prefix', () => {
       const result = resolveBranch({
-        targetBranch: "main",
-        githubRef: "refs/heads/staging",
+        targetBranch: 'main',
+        githubRef: 'refs/heads/staging',
         contextRef: defaultContextRef,
       });
-      expect(result).toBe("main");
+      expect(result).toBe('main');
     });
 
-    it("should use GITHUB_REF when TARGET_BRANCH is not set and GITHUB_REF differs from context", () => {
-      const result = resolveBranch({
-        targetBranch: undefined,
-        githubRef: "refs/heads/main",
-        contextRef: defaultContextRef,
-      });
-      expect(result).toBe("main");
-    });
-
-    it("should normalize GITHUB_REF without refs/heads/ prefix", () => {
+    it('should use GITHUB_REF when TARGET_BRANCH is not set and GITHUB_REF differs from context', () => {
       const result = resolveBranch({
         targetBranch: undefined,
-        githubRef: "main",
+        githubRef: 'refs/heads/main',
         contextRef: defaultContextRef,
       });
-      expect(result).toBe("main");
+      expect(result).toBe('main');
     });
 
-    it("should fall back to contextRef when GITHUB_REF matches context", () => {
+    it('should normalize GITHUB_REF without refs/heads/ prefix', () => {
+      const result = resolveBranch({
+        targetBranch: undefined,
+        githubRef: 'main',
+        contextRef: defaultContextRef,
+      });
+      expect(result).toBe('main');
+    });
+
+    it('should fall back to contextRef when GITHUB_REF matches context', () => {
       const result = resolveBranch({
         targetBranch: undefined,
         githubRef: defaultContextRef,
         contextRef: defaultContextRef,
       });
-      expect(result).toBe("dev");
+      expect(result).toBe('dev');
     });
 
-    it("should fall back to contextRef when GITHUB_REF is not set", () => {
+    it('should fall back to contextRef when GITHUB_REF is not set', () => {
       const result = resolveBranch({
         targetBranch: undefined,
         githubRef: undefined,
         contextRef: defaultContextRef,
       });
-      expect(result).toBe("dev");
+      expect(result).toBe('dev');
     });
 
-    it("should fall back to contextRef when both TARGET_BRANCH and GITHUB_REF are not set", () => {
+    it('should fall back to contextRef when both TARGET_BRANCH and GITHUB_REF are not set', () => {
       const result = resolveBranch({
-        contextRef: "refs/heads/main",
+        contextRef: 'refs/heads/main',
       });
-      expect(result).toBe("main");
+      expect(result).toBe('main');
     });
 
-    it("should handle empty string TARGET_BRANCH as undefined", () => {
+    it('should handle empty string TARGET_BRANCH as undefined', () => {
       const result = resolveBranch({
-        targetBranch: "",
-        githubRef: "refs/heads/main",
+        targetBranch: '',
+        githubRef: 'refs/heads/main',
         contextRef: defaultContextRef,
       });
       // Empty string is falsy, so should use GITHUB_REF
-      expect(result).toBe("main");
+      expect(result).toBe('main');
     });
 
-    it("should handle tag references in TARGET_BRANCH", () => {
+    it('should handle tag references in TARGET_BRANCH', () => {
       const result = resolveBranch({
-        targetBranch: "refs/tags/v1.2.3",
-        githubRef: "refs/heads/main",
+        targetBranch: 'refs/tags/v1.2.3',
+        githubRef: 'refs/heads/main',
         contextRef: defaultContextRef,
       });
-      expect(result).toBe("v1.2.3");
+      expect(result).toBe('v1.2.3');
     });
 
-    it("should handle complex branch names with slashes", () => {
+    it('should handle complex branch names with slashes', () => {
       const result = resolveBranch({
-        targetBranch: "refs/heads/feature/new-feature",
-        githubRef: "refs/heads/main",
+        targetBranch: 'refs/heads/feature/new-feature',
+        githubRef: 'refs/heads/main',
         contextRef: defaultContextRef,
       });
-      expect(result).toBe("feature/new-feature");
+      expect(result).toBe('feature/new-feature');
     });
 
-    it("should prioritize TARGET_BRANCH even when GITHUB_REF is different from context", () => {
+    it('should prioritize TARGET_BRANCH even when GITHUB_REF is different from context', () => {
       const result = resolveBranch({
-        targetBranch: "refs/heads/production",
-        githubRef: "refs/heads/main",
+        targetBranch: 'refs/heads/production',
+        githubRef: 'refs/heads/main',
         contextRef: defaultContextRef,
       });
-      expect(result).toBe("production");
+      expect(result).toBe('production');
     });
   });
 
-  describe("main ALLOW_EMPTY behavior", () => {
+  describe('main ALLOW_EMPTY behavior', () => {
     const originalEnv = process.env;
 
     beforeEach(() => {
       jest.clearAllMocks();
       process.env = {
         ...originalEnv,
-        GITHUB_TOKEN: "test-token",
-        GITHUB_REPOSITORY: "owner/repo",
-        TARGET_BRANCH: "refs/heads/main",
-        COMMIT_MESSAGE: "Test commit",
+        GITHUB_TOKEN: 'test-token',
+        GITHUB_REPOSITORY: 'owner/repo',
+        TARGET_BRANCH: 'refs/heads/main',
+        COMMIT_MESSAGE: 'Test commit',
       };
-      (github.context as any).ref = "refs/heads/main";
-      (commitViaAPI as jest.Mock).mockResolvedValue({
-        commitSha: "commit-sha",
-        treeSha: "tree-sha",
+      context.ref = 'refs/heads/main';
+      commitViaAPI.mockResolvedValue({
+        commitSha: 'commit-sha',
+        treeSha: 'tree-sha',
         filesCommitted: 0,
       });
     });
@@ -172,13 +196,12 @@ describe("commit-runner", () => {
       process.env = originalEnv;
     });
 
-    it("should pass allowEmpty true to commitViaAPI when ALLOW_EMPTY=true", async () => {
-      process.env.ALLOW_EMPTY = "true";
-      process.env.FILE_PATHS = "file.txt";
+    it('should pass allowEmpty true to commitViaAPI when ALLOW_EMPTY=true', async () => {
+      process.env.ALLOW_EMPTY = 'true';
+      process.env.FILE_PATHS = 'file.txt';
 
-      const fs = jest.requireMock("fs");
-      fs.existsSync = jest.fn().mockReturnValue(true);
-      fs.statSync = jest.fn().mockReturnValue({ isDirectory: () => false });
+      fsMock.existsSync.mockReturnValue(true);
+      fsMock.statSync.mockReturnValue({ isDirectory: () => false });
 
       await main();
 
@@ -189,36 +212,35 @@ describe("commit-runner", () => {
       );
     });
 
-    it("should not exit early when no files and ALLOW_EMPTY=true", async () => {
-      process.env.ALLOW_EMPTY = "true";
+    it('should not exit early when no files and ALLOW_EMPTY=true', async () => {
+      process.env.ALLOW_EMPTY = 'true';
       delete process.env.FILE_PATHS;
-      (execSync as jest.Mock).mockReturnValue("");
+      execSync.mockReturnValue('');
 
       await main();
 
       expect(commitViaAPI).toHaveBeenCalled();
-      expect(core.info).toHaveBeenCalledWith("Creating empty commit (ALLOW_EMPTY=true)");
+      expect(core.info).toHaveBeenCalledWith('Creating empty commit (ALLOW_EMPTY=true)');
     });
 
-    it("should return early when no files and ALLOW_EMPTY is unset", async () => {
+    it('should return early when no files and ALLOW_EMPTY is unset', async () => {
       delete process.env.ALLOW_EMPTY;
       delete process.env.FILE_PATHS;
-      (execSync as jest.Mock).mockReturnValue("");
+      execSync.mockReturnValue('');
 
       await main();
 
-      expect(core.info).toHaveBeenCalledWith("No files to commit");
+      expect(core.info).toHaveBeenCalledWith('No files to commit');
       expect(commitViaAPI).not.toHaveBeenCalled();
       expect(core.setFailed).not.toHaveBeenCalled();
     });
 
-    it("should treat ALLOW_EMPTY=TRUE as true", async () => {
-      process.env.ALLOW_EMPTY = "TRUE";
-      process.env.FILE_PATHS = "file.txt";
+    it('should treat ALLOW_EMPTY=TRUE as true', async () => {
+      process.env.ALLOW_EMPTY = 'TRUE';
+      process.env.FILE_PATHS = 'file.txt';
 
-      const fs = jest.requireMock("fs");
-      fs.existsSync = jest.fn().mockReturnValue(true);
-      fs.statSync = jest.fn().mockReturnValue({ isDirectory: () => false });
+      fsMock.existsSync.mockReturnValue(true);
+      fsMock.statSync.mockReturnValue({ isDirectory: () => false });
 
       await main();
 
@@ -230,22 +252,22 @@ describe("commit-runner", () => {
     });
   });
 
-  describe("main FILE_PATHS directory expansion", () => {
+  describe('main FILE_PATHS directory expansion', () => {
     const originalEnv = process.env;
 
     beforeEach(() => {
       jest.clearAllMocks();
       process.env = {
         ...originalEnv,
-        GITHUB_TOKEN: "test-token",
-        GITHUB_REPOSITORY: "owner/repo",
-        TARGET_BRANCH: "refs/heads/main",
-        COMMIT_MESSAGE: "Test commit",
+        GITHUB_TOKEN: 'test-token',
+        GITHUB_REPOSITORY: 'owner/repo',
+        TARGET_BRANCH: 'refs/heads/main',
+        COMMIT_MESSAGE: 'Test commit',
       };
-      (github.context as any).ref = "refs/heads/main";
-      (commitViaAPI as jest.Mock).mockResolvedValue({
-        commitSha: "commit-sha",
-        treeSha: "tree-sha",
+      context.ref = 'refs/heads/main';
+      commitViaAPI.mockResolvedValue({
+        commitSha: 'commit-sha',
+        treeSha: 'tree-sha',
         filesCommitted: 0,
       });
     });
@@ -254,24 +276,23 @@ describe("commit-runner", () => {
       process.env = originalEnv;
     });
 
-    it("should exclude .git directory contents when expanding FILE_PATHS directories", async () => {
-      process.env.FILE_PATHS = ".";
+    it('should exclude .git directory contents when expanding FILE_PATHS directories', async () => {
+      process.env.FILE_PATHS = '.';
 
-      const fs = jest.requireMock("fs");
-      fs.existsSync = jest.fn().mockReturnValue(true);
-      fs.readdirSync = jest.fn((dir: string) => {
-        if (dir === ".") return ["src", ".git", "README.md"];
-        if (dir === "src") return ["index.ts"];
-        if (dir === ".git") return ["config", "objects"];
-        if (dir === ".git/objects") return ["abc123"];
+      fsMock.existsSync.mockReturnValue(true);
+      fsMock.readdirSync.mockImplementation((dir: string) => {
+        if (dir === '.') return ['src', '.git', 'README.md'];
+        if (dir === 'src') return ['index.ts'];
+        if (dir === '.git') return ['config', 'objects'];
+        if (dir === '.git/objects') return ['abc123'];
         return [];
       });
-      fs.statSync = jest.fn((targetPath: string) => {
+      fsMock.statSync.mockImplementation((targetPath: string) => {
         const isDirectory =
-          targetPath === "." ||
-          targetPath === "src" ||
-          targetPath === ".git" ||
-          targetPath === ".git/objects";
+          targetPath === '.' ||
+          targetPath === 'src' ||
+          targetPath === '.git' ||
+          targetPath === '.git/objects';
         return {
           isDirectory: () => isDirectory,
           isFile: () => !isDirectory,
@@ -282,17 +303,16 @@ describe("commit-runner", () => {
 
       expect(commitViaAPI).toHaveBeenCalledWith(
         expect.objectContaining({
-          filePaths: ["src/index.ts", "README.md"],
+          filePaths: ['src/index.ts', 'README.md'],
         })
       );
     });
 
-    it("should ignore direct .git paths in FILE_PATHS while keeping normal paths", async () => {
-      process.env.FILE_PATHS = ".git,.git/config,README.md,src/index.ts";
+    it('should ignore direct .git paths in FILE_PATHS while keeping normal paths', async () => {
+      process.env.FILE_PATHS = '.git,.git/config,README.md,src/index.ts';
 
-      const fs = jest.requireMock("fs");
-      fs.existsSync = jest.fn().mockReturnValue(true);
-      fs.statSync = jest.fn().mockReturnValue({
+      fsMock.existsSync.mockReturnValue(true);
+      fsMock.statSync.mockReturnValue({
         isDirectory: () => false,
       });
 
@@ -300,41 +320,40 @@ describe("commit-runner", () => {
 
       expect(commitViaAPI).toHaveBeenCalledWith(
         expect.objectContaining({
-          filePaths: ["README.md", "src/index.ts"],
+          filePaths: ['README.md', 'src/index.ts'],
         })
       );
     });
   });
 
-  describe("main MAX_ATTEMPTS behavior", () => {
+  describe('main MAX_ATTEMPTS behavior', () => {
     const originalEnv = process.env;
 
     beforeEach(() => {
       jest.clearAllMocks();
       process.env = {
         ...originalEnv,
-        GITHUB_TOKEN: "test-token",
-        GITHUB_REPOSITORY: "owner/repo",
-        TARGET_BRANCH: "refs/heads/main",
-        COMMIT_MESSAGE: "Test commit",
-        FILE_PATHS: "file.txt",
+        GITHUB_TOKEN: 'test-token',
+        GITHUB_REPOSITORY: 'owner/repo',
+        TARGET_BRANCH: 'refs/heads/main',
+        COMMIT_MESSAGE: 'Test commit',
+        FILE_PATHS: 'file.txt',
       };
-      (github.context as any).ref = "refs/heads/main";
-      (commitViaAPI as jest.Mock).mockResolvedValue({
-        commitSha: "commit-sha",
-        treeSha: "tree-sha",
+      context.ref = 'refs/heads/main';
+      commitViaAPI.mockResolvedValue({
+        commitSha: 'commit-sha',
+        treeSha: 'tree-sha',
         filesCommitted: 1,
       });
-      const fs = jest.requireMock("fs");
-      fs.existsSync = jest.fn().mockReturnValue(true);
-      fs.statSync = jest.fn().mockReturnValue({ isDirectory: () => false });
+      fsMock.existsSync.mockReturnValue(true);
+      fsMock.statSync.mockReturnValue({ isDirectory: () => false });
     });
 
     afterAll(() => {
       process.env = originalEnv;
     });
 
-    it("should pass maxAttempts 1 when MAX_ATTEMPTS is not set", async () => {
+    it('should pass maxAttempts 1 when MAX_ATTEMPTS is not set', async () => {
       delete process.env.MAX_ATTEMPTS;
 
       await main();
@@ -346,8 +365,8 @@ describe("commit-runner", () => {
       );
     });
 
-    it("should pass parsed maxAttempts 3 when MAX_ATTEMPTS=3", async () => {
-      process.env.MAX_ATTEMPTS = "3";
+    it('should pass parsed maxAttempts 3 when MAX_ATTEMPTS=3', async () => {
+      process.env.MAX_ATTEMPTS = '3';
 
       await main();
 
@@ -358,8 +377,8 @@ describe("commit-runner", () => {
       );
     });
 
-    it("should clamp invalid MAX_ATTEMPTS to 1 with warning", async () => {
-      process.env.MAX_ATTEMPTS = "0";
+    it('should clamp invalid MAX_ATTEMPTS to 1 with warning', async () => {
+      process.env.MAX_ATTEMPTS = '0';
 
       await main();
 
@@ -373,8 +392,8 @@ describe("commit-runner", () => {
       );
     });
 
-    it("should clamp negative MAX_ATTEMPTS to 1", async () => {
-      process.env.MAX_ATTEMPTS = "-1";
+    it('should clamp negative MAX_ATTEMPTS to 1', async () => {
+      process.env.MAX_ATTEMPTS = '-1';
 
       await main();
 
@@ -385,8 +404,8 @@ describe("commit-runner", () => {
       );
     });
 
-    it("should clamp non-numeric MAX_ATTEMPTS to 1", async () => {
-      process.env.MAX_ATTEMPTS = "abc";
+    it('should clamp non-numeric MAX_ATTEMPTS to 1', async () => {
+      process.env.MAX_ATTEMPTS = 'abc';
 
       await main();
 

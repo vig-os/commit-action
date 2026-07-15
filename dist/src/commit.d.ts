@@ -1,5 +1,5 @@
-import * as github from "@actions/github";
-import { RetryConfig } from "./retry";
+import * as github from '@actions/github';
+import { RetryConfig } from './retry.js';
 /**
  * Retry settings threaded into individual Octokit REST call sites so a transient
  * mid-batch failure retries only the failing call, not the whole multi-call
@@ -59,18 +59,18 @@ export declare function isBinaryFile(filePath: string): boolean;
 /**
  * Git tree file mode from local file permissions.
  */
-export declare function getFileMode(filePath: string): "100644" | "100755";
+export declare function getFileMode(filePath: string): '100644' | '100755';
 /** Options for createBlob. */
 export interface CreateBlobOptions {
     /** Pre-computed mode from stat; avoids redundant statSync. */
-    mode?: "100644" | "100755";
+    mode?: '100644' | '100755';
 }
 /**
  * Creates a Git blob for a file via GitHub API
  */
 export declare function createBlob(octokit: ReturnType<typeof github.getOctokit>, owner: string, repo: string, filePath: string, options?: CreateBlobOptions, retry?: RetryOptions): Promise<{
     sha: string;
-    mode: "100644" | "100755";
+    mode: '100644' | '100755';
 }>;
 /**
  * Creates a Git tree with updated files via GitHub API.

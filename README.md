@@ -20,7 +20,7 @@ A modular GitHub Action that commits changes via GitHub API, creating automatica
 
 ```yaml
 - name: Commit and push changes via API
-  uses: vig-os/commit-action@v0.1.5
+  uses: vig-os/commit-action@v0.2.0
   env:
     GITHUB_TOKEN: ${{ steps.sync.outputs.app-token || steps.sync.outputs.github-token }}
     GITHUB_REPOSITORY: ${{ github.repository }}
@@ -32,7 +32,9 @@ A modular GitHub Action that commits changes via GitHub API, creating automatica
     MAX_ATTEMPTS: "3"     # Optional: retry on transient API errors (default: 1 = no retries)
 ```
 
-Inline `createTree` optimization is in `[Unreleased]`; until the next release, pin `@main` for that behavior. Published tags (e.g. `@v0.1.5`) use the previous implementation.
+**Pinning:** use `@v0` to float on the latest v0 release (the major tag is moved
+to each new release automatically), or pin an exact `@vX.Y.Z` tag or a full
+commit SHA for immutability. The example above pins the exact `@v0.2.0`.
 
 ### As a CLI Script
 

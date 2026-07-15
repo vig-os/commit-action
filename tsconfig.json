@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2023",
-    "module": "commonjs",
+    "module": "nodenext",
     "lib": ["ES2023"],
     "outDir": "./dist",
     "strict": true,
@@ -9,7 +9,7 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "moduleResolution": "node",
+    "moduleResolution": "nodenext",
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,

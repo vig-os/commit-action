@@ -1,0 +1,117 @@
+# Dist Freshness Gate (consumer-owned)
+#
+# Guards the committed ncc bundle against drift from src/. This is a JS GitHub
+# Action: consumers execute the bundle directly (action.yml -> main:
+# dist/index.js), so a forgotten `just bundle` ships a stale artifact while tests
+# still pass against src/. This gate rebuilds the bundle with the pinned
+# dev-shell toolchain and fails the PR when the committed dist/index.js differs,
+# forcing a fresh bundle onto every commit that can reach a tag (#59).
+#
+# Scoped to the release boundary (#71): dev is NOT gated. Nothing ships from
+# dev (only tags ship), so a stale bundle there is harmless and gating it made
+# every Renovate runtime-dep bump fail. Staleness inherited from dev surfaces
+# on the release/X.Y.Z -> main draft PR right after prepare-release and is
+# fixed by a bugfix PR to the release branch; release-extension.yml's
+# finalize-time verification remains the hard guarantee that no tag is cut on
+# a stale bundle.
+#
+# Deliberately a SEPARATE file from the scaffold-managed ci.yml (no edits to a
+# managed workflow); the `Dist Check` job is wired as a required status check
+# (#60), so its `name:` is contractual — do not rename it.
+#
+# Toolchain provisioning mirrors ci.yml: a leading resolve-toolchain job reads
+# .vig-os and emits the delivery mode + container image (empty string => host
+# runner in direnv/bare), and the Dist Check job runs the shared
+# setup-devkit-toolchain composite so the rebuild uses the same pinned Node as
+# the dev-shell rather than a random setup-node version.
+#
+# Scope note: the whole dist/ tree is verified. The declaration byproducts under
+# dist/src/ that once made a tree-wide diff non-deterministic across checkout
+# locations are gitignored as of #70 — `just bundle` still re-emits them here,
+# but git no longer sees them — so dist/ tracks only the real artifact. The check
+# is a `git status` on dist/ rather than a `git diff` so that it also fails on
+# build output ncc starts emitting that nobody has committed yet.
+#
+# Triggers:
+#   - Pull requests to release/** and main
+
+name: Dist Check
+
+on:  # yamllint disable-line rule:truthy
+  pull_request:
+    branches:
+      - 'release/**'
+      - main
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  resolve-toolchain:
+    name: Resolve toolchain
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    outputs:
+      mode: ${{ steps.resolve.outputs.mode }}
+      image: ${{ steps.resolve.outputs.image }}
+      image-tag: ${{ steps.resolve.outputs.image-tag }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          sparse-checkout: |
+            .vig-os
+            .github/actions/resolve-toolchain
+          sparse-checkout-cone-mode: false
+
+      - name: Resolve toolchain
+        id: resolve
+        uses: ./.github/actions/resolve-toolchain
+        with:
+          registry-token: ${{ secrets.GHCR_PULL_TOKEN || github.token }}
+          registry-username: ${{ github.actor }}
+
+  dist-check:
+    name: Dist Check
+    needs: [resolve-toolchain]
+    runs-on: ubuntu-24.04
+    # Empty image (direnv/bare) => runs on the host; non-empty => in-container.
+    # The credentials block is inert on the host (proven by the #992 spike).
+    container:
+      image: ${{ needs.resolve-toolchain.outputs.image }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GHCR_PULL_TOKEN || github.token }}
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+
+      # Mode-aware preamble: exports the in-image env in container mode, or
+      # provisions the Nix dev-shell (direnv) / uv host toolchain (bare)
+      # otherwise. After this, `just` works in every mode with the pinned Node.
+      - name: Set up devkit toolchain
+        uses: ./.github/actions/setup-devkit-toolchain
+        with:
+          mode: ${{ needs.resolve-toolchain.outputs.mode }}
+          devkit-version: ${{ needs.resolve-toolchain.outputs.image-tag }}
+          cachix-cache: ${{ vars.CACHIX_CACHE }}
+          cachix-auth-token: ${{ secrets.CACHIX_AUTH_TOKEN }}
+
+      - name: Install dependencies
+        run: just sync
+
+      - name: Rebuild bundle
+        run: just bundle
+
+      - name: Verify committed bundle is fresh
+        run: |
+          if [ -n "$(git status --porcelain -- dist/)" ]; then
+            git --no-pager diff -- dist/
+            git status --short -- dist/
+            echo "::error::dist/ is out of date with src/. Run 'just bundle' and commit the refreshed bundle."
+            exit 1
+          fi

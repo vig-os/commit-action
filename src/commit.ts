@@ -1,6 +1,6 @@
-import * as github from "@actions/github";
-import * as fs from "fs";
-import { withRetry, RetryConfig } from "./retry";
+import * as github from '@actions/github';
+import * as fs from 'fs';
+import { withRetry, RetryConfig } from './retry.js';
 
 /**
  * Retry settings threaded into individual Octokit REST call sites so a transient
@@ -16,10 +16,7 @@ export interface RetryOptions {
  * Runs an Octokit REST call, retrying only that call on transient errors when
  * `retry` is provided. Without `retry`, the call runs once (no wrapping).
  */
-function callWithRetry<T>(
-  fn: () => Promise<T>,
-  retry?: RetryOptions
-): Promise<T> {
+function callWithRetry<T>(fn: () => Promise<T>, retry?: RetryOptions): Promise<T> {
   if (!retry) {
     return fn();
   }
@@ -81,8 +78,8 @@ function isBinaryFromStat(filePath: string, stat: fs.Stats): boolean {
   }
   const toRead = Math.min(8192, stat.size);
   const buf = Buffer.alloc(toRead);
-  const fd = fs.openSync(filePath, "r");
-  let bytesRead = 0;
+  const fd = fs.openSync(filePath, 'r');
+  let bytesRead: number;
   try {
     bytesRead = fs.readSync(fd, buf, 0, toRead, 0);
   } finally {
@@ -108,28 +105,28 @@ export function isBinaryFile(filePath: string): boolean {
 /**
  * Git tree file mode from local file permissions.
  */
-export function getFileMode(filePath: string): "100644" | "100755" {
+export function getFileMode(filePath: string): '100644' | '100755' {
   const stats = fs.statSync(filePath);
-  return stats.mode & 0o111 ? "100755" : "100644";
+  return stats.mode & 0o111 ? '100755' : '100644';
 }
 
 /** Options for createBlob. */
 export interface CreateBlobOptions {
   /** Pre-computed mode from stat; avoids redundant statSync. */
-  mode?: "100644" | "100755";
+  mode?: '100644' | '100755';
 }
 
 type TreeBlobEntry =
   | {
       path: string;
-      mode: "100644" | "100755";
-      type: "blob";
+      mode: '100644' | '100755';
+      type: 'blob';
       content: string;
     }
   | {
       path: string;
-      mode: "100644" | "100755";
-      type: "blob";
+      mode: '100644' | '100755';
+      type: 'blob';
       sha: string;
     };
 
@@ -143,13 +140,13 @@ export async function createBlob(
   filePath: string,
   options?: CreateBlobOptions,
   retry?: RetryOptions
-): Promise<{ sha: string; mode: "100644" | "100755" }> {
+): Promise<{ sha: string; mode: '100644' | '100755' }> {
   if (!fs.existsSync(filePath)) {
     throw new Error(`File not found: ${filePath}`);
   }
 
   const content = fs.readFileSync(filePath);
-  const base64Content = content.toString("base64");
+  const base64Content = content.toString('base64');
 
   const { data: blob } = await callWithRetry(
     () =>
@@ -157,7 +154,7 @@ export async function createBlob(
         owner,
         repo,
         content: base64Content,
-        encoding: "base64",
+        encoding: 'base64',
       }),
     retry
   );
@@ -175,11 +172,11 @@ export async function createBlob(
  */
 function estimateEntrySize(entry: TreeBlobEntry): number {
   const overhead = 64;
-  const pathSize = Buffer.byteLength(entry.path, "utf-8");
+  const pathSize = Buffer.byteLength(entry.path, 'utf-8');
   const payloadSize =
-    "content" in entry
-      ? Buffer.byteLength(entry.content, "utf-8")
-      : Buffer.byteLength(entry.sha, "utf-8");
+    'content' in entry
+      ? Buffer.byteLength(entry.content, 'utf-8')
+      : Buffer.byteLength(entry.sha, 'utf-8');
   return overhead + pathSize + payloadSize;
 }
 
@@ -255,23 +252,15 @@ export async function createTree(
 
   for (const filePath of filePaths) {
     const stat = fs.statSync(filePath);
-    const mode: "100644" | "100755" =
-      stat.mode & 0o111 ? "100755" : "100644";
+    const mode: '100644' | '100755' = stat.mode & 0o111 ? '100755' : '100644';
     const isBinary = isBinaryFromStat(filePath, stat);
 
     if (isBinary) {
-      const result = await createBlob(
-        octokit,
-        owner,
-        repo,
-        filePath,
-        { mode },
-        retry
-      );
+      const result = await createBlob(octokit, owner, repo, filePath, { mode }, retry);
       treeEntries.push({
         path: filePath,
         mode: result.mode,
-        type: "blob" as const,
+        type: 'blob' as const,
         sha: result.sha,
       });
       continue;
@@ -280,18 +269,11 @@ export async function createTree(
     // Large text files are routed through createBlob (base64) rather than
     // inlined, to keep the createTree request body from growing unbounded.
     if (stat.size > INLINE_CONTENT_SIZE_LIMIT) {
-      const result = await createBlob(
-        octokit,
-        owner,
-        repo,
-        filePath,
-        { mode },
-        retry
-      );
+      const result = await createBlob(octokit, owner, repo, filePath, { mode }, retry);
       treeEntries.push({
         path: filePath,
         mode: result.mode,
-        type: "blob" as const,
+        type: 'blob' as const,
         sha: result.sha,
       });
       continue;
@@ -299,26 +281,19 @@ export async function createTree(
 
     const raw = fs.readFileSync(filePath);
     try {
-      const content = new TextDecoder("utf-8", { fatal: true }).decode(raw);
+      const content = new TextDecoder('utf-8', { fatal: true }).decode(raw);
       treeEntries.push({
         path: filePath,
         mode,
-        type: "blob" as const,
+        type: 'blob' as const,
         content,
       });
     } catch {
-      const result = await createBlob(
-        octokit,
-        owner,
-        repo,
-        filePath,
-        { mode },
-        retry
-      );
+      const result = await createBlob(octokit, owner, repo, filePath, { mode }, retry);
       treeEntries.push({
         path: filePath,
         mode: result.mode,
-        type: "blob" as const,
+        type: 'blob' as const,
         sha: result.sha,
       });
     }
@@ -328,14 +303,7 @@ export async function createTree(
     return baseTreeSha;
   }
 
-  return createTreeChained(
-    octokit,
-    owner,
-    repo,
-    baseTreeSha,
-    treeEntries,
-    retry
-  );
+  return createTreeChained(octokit, owner, repo, baseTreeSha, treeEntries, retry);
 }
 
 /**
@@ -411,9 +379,7 @@ export async function getBranchInfo(
  * Main function to commit changes via GitHub API
  * This is designed to be modular and reusable - can be used as a standalone action
  */
-export async function commitViaAPI(
-  options: CommitOptions
-): Promise<CommitResult> {
+export async function commitViaAPI(options: CommitOptions): Promise<CommitResult> {
   const {
     token,
     owner,
@@ -430,7 +396,7 @@ export async function commitViaAPI(
   } = options;
 
   if (filePaths.length === 0 && !allowEmpty) {
-    throw new Error("No files to commit");
+    throw new Error('No files to commit');
   }
 
   const octokit = github.getOctokit(token);
@@ -484,15 +450,7 @@ export async function commitViaAPI(
 
   // Create commit (automatically signed by GitHub)
   const commitSha = await withRetry(
-    () =>
-      createCommit(
-        octokit,
-        owner,
-        repo,
-        newTreeSha,
-        branchSha,
-        message
-      ),
+    () => createCommit(octokit, owner, repo, newTreeSha, branchSha, message),
     retryConfig,
     log
   );

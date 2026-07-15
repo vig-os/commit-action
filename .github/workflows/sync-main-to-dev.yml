@@ -1,3 +1,6 @@
+# Managed by vigOS devkit — regenerated on upgrade; local edits are lost.
+# Customize in justfile.project. Bugs / missing tools: https://github.com/vig-os/devkit/issues
+
 # Sync main to dev
 #
 # Keeps dev up to date with main by opening a PR from a disposable sync branch.
@@ -18,12 +21,6 @@
 #
 # NOTE: This workspace workflow is intentionally decoupled from upstream
 # `.github/workflows/sync-main-to-dev.yml` and maintained separately.
-#
-# LOCAL FIX (#36): the sync job checks out the triggering ref instead of `dev`.
-# This diverges from the devkit scaffold, which checks out `dev` and then calls a
-# local action that may exist only on `main` — see the comment on that step. Filed
-# upstream as vig-os/devkit#1034; drop this divergence once the scaffold carries
-# the fix, and re-check the step before any devkit re-scaffold overwrites it.
 #
 # No CHANGELOG reset is needed here. prepare-release never strips ## Unreleased
 # from the release branch, so main and dev both carry it and it is stable common
@@ -153,12 +150,6 @@ jobs:
           client-id: ${{ secrets.COMMIT_APP_CLIENT_ID }}
           private-key: ${{ secrets.COMMIT_APP_PRIVATE_KEY }}
 
-      # Checks out main (the triggering ref), NOT dev: `uses: ./…` resolves
-      # against the checked-out workspace, and the local actions below may not
-      # exist on dev yet. Checking out dev deadlocks the sync — the PR that would
-      # carry a new action onto dev is the one this job opens (#36, devkit#1034).
-      # Every step here works on remote refs (origin/main, origin/dev) or the API,
-      # so no step needs dev's working tree.
       - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
         with:
