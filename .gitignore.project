@@ -1,0 +1,18 @@
+# Repo-specific root .gitignore entries — yours to edit; upgrades never
+# overwrite this file. This is the durable committed home for repo-ROOT ignores:
+# git honors a root ignore only from the root .gitignore, which devkit
+# regenerates on every upgrade, so entries added HERE are appended to that
+# regenerated .gitignore and survive. Put durable repo-root ignores below (not
+# in the managed .gitignore, where hand edits are lost).
+#
+# Flake-generated pre-commit config: this repo opts into flake-sourced hooks
+# (`hooks = { }` in flake.nix), which installs .pre-commit-config.yaml as a
+# /nix/store symlink. It must never be committed — the target is machine-local.
+# (The #1092 auto-seed only fires when the store symlink is resolvable at
+# scaffold time; a direnv-mode upgrade runs in a container without /nix/store,
+# so it is pinned here in the durable consumer-owned ignore instead.)
+.pre-commit-config.yaml
+
+# Examples (uncomment / add your own):
+#   /scratch/
+#   /secrets.local.yaml
