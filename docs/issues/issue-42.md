@@ -2,7 +2,7 @@
 type: issue
 state: open
 created: 2026-07-14T08:32:46Z
-updated: 2026-07-14T14:58:53Z
+updated: 2026-07-15T14:15:15Z
 author: renovate[bot]
 author_url: https://github.com/renovate[bot]
 url: https://github.com/vig-os/commit-action/issues/42
@@ -13,12 +13,18 @@ milestone: none
 projects: none
 parent: none
 children: none
-synced: 2026-07-15T04:46:34.269Z
+synced: 2026-07-15T15:29:13.580Z
 ---
 
 # [Issue 42]: [Dependency Dashboard](https://github.com/vig-os/commit-action/issues/42)
 
 This issue lists Renovate updates and detected dependencies. Read the [Dependency Dashboard](https://docs.renovatebot.com/key-concepts/dashboard/) docs to learn more.<br>[View this repository on the Mend.io Web Portal](https://developer.mend.io/github/vig-os/commit-action).
+
+## Awaiting Schedule
+
+The following updates are awaiting their schedule. To get an update now, click on a checkbox below.
+
+ - [ ] <!-- unschedule-branch=renovate/github-actions-(minor-and-patch) -->ci(actions): update cachix/install-nix-action action to v31.11.0
 
 ## PR Closed (Blocked)
 
@@ -28,22 +34,24 @@ The following updates are blocked by an existing closed PR. To recreate the PR, 
 
 ## Detected Dependencies
 
-<details><summary>github-actions (17)</summary>
+<details><summary>github-actions (20)</summary>
 <blockquote>
 
 <details><summary>.github/actions/setup-devkit-toolchain/action.yml (3)</summary>
 
- - `cachix/install-nix-action v31.10.7@a49548c11d9846ad46ecc0115273879b045f001c`
+ - `cachix/install-nix-action v31.10.7@a49548c11d9846ad46ecc0115273879b045f001c` → [Updates: `v31.11.0`]
  - `cachix/cachix-action v17@5f2d7c5294214f71b873db4b969586b980625e71`
  - `astral-sh/setup-uv v8.3.2@11f9893b081a58869d3b5fccaea48c9e9e46f990`
 
 </details>
 
-<details><summary>.github/workflows/ci.yml (7)</summary>
+<details><summary>.github/workflows/ci.yml (9)</summary>
 
  - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
  - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
  - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
+ - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
+ - `ubuntu 24.04`
  - `ubuntu 24.04`
  - `ubuntu 24.04`
  - `ubuntu 24.04`
@@ -56,6 +64,12 @@ The following updates are blocked by an existing closed PR. To recreate the PR, 
  - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
  - `github/codeql-action v4@99df26d4f13ea111d4ec1a7dddef6063f76b97e9`
  - `github/codeql-action v4@99df26d4f13ea111d4ec1a7dddef6063f76b97e9`
+ - `ubuntu 24.04`
+
+</details>
+
+<details><summary>.github/workflows/dist-check-stub.yml (1)</summary>
+
  - `ubuntu 24.04`
 
 </details>
@@ -85,20 +99,31 @@ The following updates are blocked by an existing closed PR. To recreate the PR, 
 
 </details>
 
-<details><summary>.github/workflows/prepare-release.yml (8)</summary>
+<details><summary>.github/workflows/prepare-release-extension.yml (1)</summary>
+
+ - `ubuntu 24.04`
+
+</details>
+
+<details><summary>.github/workflows/prepare-release.yml (13)</summary>
 
  - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
  - `actions/create-github-app-token v3@bcd2ba49218906704ab6c1aa796996da409d3eb1`
+ - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
+ - `vig-os/commit-action v0.2.0@1bc004353d08d9332a0cb54920b148256220c8e0`
+ - `actions/create-github-app-token v3@bcd2ba49218906704ab6c1aa796996da409d3eb1`
+ - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
  - `actions/create-github-app-token v3@bcd2ba49218906704ab6c1aa796996da409d3eb1`
  - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
  - `vig-os/commit-action v0.2.0@1bc004353d08d9332a0cb54920b148256220c8e0`
- - `vig-os/commit-action v0.2.0@1bc004353d08d9332a0cb54920b148256220c8e0`
+ - `ubuntu 24.04`
+ - `ubuntu 24.04`
  - `ubuntu 24.04`
  - `ubuntu 24.04`
 
 </details>
 
-<details><summary>.github/workflows/promote-release.yml (14)</summary>
+<details><summary>.github/workflows/promote-release.yml (17)</summary>
 
  - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
  - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
@@ -109,10 +134,21 @@ The following updates are blocked by an existing closed PR. To recreate the PR, 
  - `actions/create-github-app-token v3@bcd2ba49218906704ab6c1aa796996da409d3eb1`
  - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
  - `actions/create-github-app-token v3@bcd2ba49218906704ab6c1aa796996da409d3eb1`
+ - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
+ - `actions/create-github-app-token v3@bcd2ba49218906704ab6c1aa796996da409d3eb1`
  - `ubuntu 24.04`
  - `ubuntu 24.04`
  - `ubuntu 24.04`
  - `ubuntu 24.04`
+ - `ubuntu 24.04`
+ - `ubuntu 24.04`
+
+</details>
+
+<details><summary>.github/workflows/published-tag-smoke.yml (3)</summary>
+
+ - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
+ - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
  - `ubuntu 24.04`
 
 </details>

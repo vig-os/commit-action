@@ -1,19 +1,19 @@
 ---
 type: issue
-state: open
+state: closed
 created: 2026-07-14T09:08:57Z
-updated: 2026-07-14T09:08:57Z
+updated: 2026-07-15T12:33:30Z
 author: c-vigo
 author_url: https://github.com/c-vigo
 url: https://github.com/vig-os/commit-action/issues/62
-comments: 0
+comments: 1
 labels: task
 assignees: none
 milestone: none
 projects: none
 parent: none
 children: none
-synced: 2026-07-15T04:46:31.532Z
+synced: 2026-07-15T15:29:13.170Z
 ---
 
 # [Issue 62]: [[TASK] Adopt DEVKIT_TAG_PREFIX=v and floating major/minor tags once devkit ships them](https://github.com/vig-os/commit-action/issues/62)
@@ -40,4 +40,17 @@ Adopt the per-repo tag scheme in the devkit release pipeline once devkit ships i
 ## Why blocked rather than local-fixed
 
 The tag naming is spread across four scaffold-managed workflows (`release-core`, `release-publish`, `prepare-release`, `promote-release`) plus `prepare-changelog`; patching locally means drift re-applied on every devkit upgrade. The interim position: hold releases through the pipeline until the prefix ships (or, if one is urgent, tag manually after promote in the historical `v`-scheme and note it in the release).
+
+---
+
+# [Comment #1]() by [c-vigo]()
+
+_Posted on July 15, 2026 at 12:33 PM_
+
+Delivered. `DEVKIT_TAG_PREFIX=v` and `DEVKIT_FLOATING_TAGS=major,minor` are declared in `.vig-os`:
+
+- adopted in #76 (devkit `1.2.0`, which shipped the blockers vig-os/devkit#1044 + vig-os/devkit#1045), and
+- re-secured in #80 (devkit `1.2.1`) after an upgrade regression blanked them (filed upstream as vig-os/devkit#1116).
+
+Consumers can now pin `@v0` (floating major), an exact `@vX.Y.Z`, or a SHA; the floating `v0`/`v0.X` tags move automatically at promote. Closing as complete.
 
