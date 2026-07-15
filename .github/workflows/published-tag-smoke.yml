@@ -115,10 +115,23 @@ jobs:
           fi
           echo "commit-sha=${COMMIT_SHA} files-committed=${FILES_COMMITTED}"
 
-          # 2. The scratch branch must actually point at that commit.
-          HEAD_SHA="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${SCRATCH_BRANCH}" --jq '.sha')"
+          # 2. The scratch branch must actually point at that commit. The action's
+          #    updateRef and this read can race GitHub's replication lag (#96): a
+          #    read immediately after the write may return the stale pre-commit
+          #    head. Poll with a short bounded retry before declaring a mismatch,
+          #    but keep the hard failure after the budget — a persistent mismatch
+          #    is the real no-op this check exists to catch (the #58 class of bug).
+          HEAD_SHA=""
+          for attempt in 1 2 3 4 5; do
+            HEAD_SHA="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${SCRATCH_BRANCH}" --jq '.sha')"
+            [ "${HEAD_SHA}" = "${COMMIT_SHA}" ] && break
+            if [ "${attempt}" -lt 5 ]; then
+              echo "Branch head ${HEAD_SHA} != ${COMMIT_SHA} (attempt ${attempt}/5); retrying in 3s..."
+              sleep 3
+            fi
+          done
           if [ "${HEAD_SHA}" != "${COMMIT_SHA}" ]; then
-            echo "::error::Branch head ${HEAD_SHA} != reported commit ${COMMIT_SHA}."
+            echo "::error::Branch head ${HEAD_SHA} != reported commit ${COMMIT_SHA} after 5 attempts."
             exit 1
           fi
 
