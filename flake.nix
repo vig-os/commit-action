@@ -12,7 +12,7 @@
     # tag instead and bump deliberately:
     #   vigos.url = "github:vig-os/devkit?ref=<tag>";
     # Policy: docs/NIX.md "Home-manager modules - versioning & release policy".
-    vigos.url = "github:vig-os/devkit?ref=1.2.0";
+    vigos.url = "github:vig-os/devkit?ref=1.2.1";
     # Follow vigos's pinned nixpkgs + flake-utils so your tools match the
     # toolchain exactly (one resolved nixpkgs, no drift).
     nixpkgs.follows = "vigos/nixpkgs";
