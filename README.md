@@ -32,6 +32,10 @@ A modular GitHub Action that commits changes via GitHub API, creating automatica
     MAX_ATTEMPTS: "3"     # Optional: retry on transient API errors (default: 1 = no retries)
 ```
 
+**Pinning:** use `@v0` to float on the latest v0 release (the major tag is moved
+to each new release automatically), or pin an exact `@vX.Y.Z` tag or a full
+commit SHA for immutability. The example above pins the exact `@v0.2.0`.
+
 ### As a CLI Script
 
 ```bash

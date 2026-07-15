@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+
+- Adopted vigOS devkit `1.2.0` and declared the per-repo release tag scheme in `.vig-os`: `DEVKIT_TAG_PREFIX=v` restores this repo's historical `v`-prefixed tags (`vX.Y.Z`) through the release pipeline, and `DEVKIT_FLOATING_TAGS=major,minor` force-moves the floating `v0` / `v0.X` tags to each promoted release automatically — both were previously moved by hand. Consumers can pin `@v0` (floating major), an exact `@vX.Y.Z`, or a SHA (issue #62). The 1.2.0 scaffold's language-aware managed `.gitignore` dropped three ignores this Node/flake-hooks repo relies on; restored them so the pre-commit suite and `dist-check` stay green (flake-generated `.pre-commit-config.yaml` symlink re-ignored in the root `.gitignore`; `dist/src/` byproducts re-ignored via a new upgrade-proof `dist/.gitignore`) and bumped the `vigos` flake input to `1.2.0` to match the scaffold (issue #62).
+
 ### Fixed
 
 - **`npm run lint` and `npm run format` had never checked the real source.** Both globbed with `src/**/*.ts`, but npm runs scripts through `sh`, which has no globstar — so `**` degraded to a single `*` and the pattern collapsed to `src/*/*.ts`, matching only files exactly one directory deep. In practice that was a single test-setup file; `src/commit.ts`, `src/commit-runner.ts` and `src/retry.ts` — the entire production surface — were matched by neither script. The scripts now pass the directory (`eslint src`, `prettier --write src`) and let each tool expand its own globs with correct `**` semantics (issue #66).
