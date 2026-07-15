@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.3.0] - TBD
+
+### Added
+
 - A new consumer-owned `js-quality` workflow gates every PR on `just lint` and `just format-check` (a new read-only recipe backed by `prettier --check src`). Neither eslint nor prettier was enforced anywhere before: the scaffold-managed `ci.yml` has a "Lint & Format" job, but it runs only the prek hook suite, which contains no JS linter or formatter. That is precisely how the broken globs above survived — the scripts were never run by anything but a human. Fixing them without a gate would have let them rot again the same way (issue #66).
 - A new `e2e-smoke` workflow executes the **committed bundle** against the real GitHub API on every PR, running the action the way a consumer does (`uses: ./`) rather than importing its source. It commits a file to a scratch branch through the full REST flow and asserts the commit exists, is **signed**, and carries the expected content, then deletes the branch. Nothing previously executed `dist/index.js`: the unit tests import `main()` directly and the repo dogfoods `commit-action` at a pinned released SHA. That gap is not theoretical — the ESM migration found that the CommonJS `require.main === module` entry guard does not survive bundling to ESM, leaving the bundled action a silent no-op (exit 0, nothing committed) that 84 passing unit tests could not see (issue #58).
 - CI now gates the committed ncc bundle against source drift so a stale `dist/index.js` can never reach a tag. A new consumer-owned `dist-check` workflow rebuilds the bundle on every PR to `release/**`/`main` and fails when the committed `dist/index.js` differs, and the release-time `release-extension` hook re-verifies the finalized commit before it is tagged (rolling the release back on drift). Both rebuild with the pinned dev-shell toolchain (issue #59). The gate is deliberately scoped to the release boundary — `dev` is not gated, since nothing ships from `dev` and gating it would fail every Renovate runtime-dependency bump (issue #71).
