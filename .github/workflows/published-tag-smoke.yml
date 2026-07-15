@@ -1,0 +1,144 @@
+# Published Tag Smoke — run the RELEASED artifact from its git tag, as a consumer does
+#
+# e2e-smoke.yml proves the bundled action commits when run as `uses: ./` from a
+# branch checkout. It never runs the action from the PUBLISHED tag ref a consumer
+# actually pins (`uses: vig-os/commit-action@vX.Y.Z`). This workflow closes that
+# last gap: after a release tag is pushed, it checks the action out AT THE TAG and
+# runs it, asserting the released artifact really produces a signed commit on the
+# runtime declared in its own action.yml.
+#
+# Triggers:
+#   - push of any vX.Y.Z / vX.Y.Z-rcN tag. The release pipeline pushes tags with the
+#     Release App token (not GITHUB_TOKEN), so tag-push events do trigger workflows.
+#     The `v*.*.*` filter matches full semver tags (RCs and finals) and excludes the
+#     floating v0 / v0.X tags that are force-moved on promotion (which would otherwise
+#     re-trigger this smoke on every promotion).
+#   - workflow_dispatch with a `ref` input, to validate a tag pushed before this
+#     workflow existed (e.g. the current v0.3.0-rc1, whose push predates this file).
+#
+# GitHub forbids expressions in `uses:`, so the tag under test is checked out into a
+# path and executed via `uses: ./action-under-test` — the faithful equivalent of a
+# consumer pinning `@<tag>`: the exact tag ref is fetched and its committed
+# dist/index.js is run.
+
+name: Published Tag Smoke
+
+on:  # yamllint disable-line rule:truthy
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Published tag to smoke-test (e.g. v0.3.0-rc1)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: published-tag-smoke-${{ inputs.ref || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    name: Published Tag Smoke
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    env:
+      TAG: ${{ inputs.ref || github.ref_name }}
+      # No slash: the branch name is interpolated into `gh api .../commits/{ref}`
+      # paths below, where a slash would be read as a path separator.
+      SCRATCH_BRANCH: tag-smoke-${{ github.run_id }}-${{ github.run_attempt }}
+
+    steps:
+      # A signed base commit for the scratch branch — the repo's required_signatures
+      # ruleset rejects unsigned commits. On a tag push HEAD is the release commit; on
+      # dispatch it is the default-branch head. Both are signed.
+      - name: Checkout repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+
+      # The action under test, fetched AT THE PUBLISHED TAG — this is exactly what a
+      # consumer pinning `@${TAG}` would run.
+      - name: Checkout action at the tag
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          ref: ${{ env.TAG }}
+          path: action-under-test
+
+      # Created from the checked-out HEAD, so the branch starts at a commit that
+      # already satisfies the required_signatures ruleset.
+      - name: Create scratch branch
+        run: git push origin "HEAD:refs/heads/${SCRATCH_BRANCH}"
+
+      - name: Stage a file for the action to commit
+        id: payload
+        run: |
+          set -euo pipefail
+          # Unique per run, so the assertion cannot pass on a stale blob.
+          CONTENT="published-tag smoke ${TAG} ${GITHUB_RUN_ID}/${GITHUB_RUN_ATTEMPT}"
+          printf '%s\n' "$CONTENT" > tag-smoke.txt
+          echo "content=${CONTENT}" >> "$GITHUB_OUTPUT"
+
+      # The released artifact — the action's committed dist/ bundle at ${TAG}, run
+      # the way a consumer runs it.
+      - name: Commit via the released action
+        id: commit
+        uses: ./action-under-test
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          TARGET_BRANCH: refs/heads/${{ env.SCRATCH_BRANCH }}
+          COMMIT_MESSAGE: "test(smoke): published-tag smoke for ${{ env.TAG }}"
+          FILE_PATHS: tag-smoke.txt
+          MAX_ATTEMPTS: "3"
+
+      - name: Verify the released action actually committed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          COMMIT_SHA: ${{ steps.commit.outputs.commit-sha }}
+          FILES_COMMITTED: ${{ steps.commit.outputs.files-committed }}
+          EXPECTED_CONTENT: ${{ steps.payload.outputs.content }}
+        run: |
+          set -euo pipefail
+
+          # 1. The action must report a commit. An empty output is the silent no-op
+          #    failure mode (#58): green step, nothing committed.
+          if [ -z "${COMMIT_SHA}" ]; then
+            echo "::error::Released action @${TAG} produced no commit-sha — it exited successfully without committing."
+            exit 1
+          fi
+          echo "commit-sha=${COMMIT_SHA} files-committed=${FILES_COMMITTED}"
+
+          # 2. The scratch branch must actually point at that commit.
+          HEAD_SHA="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${SCRATCH_BRANCH}" --jq '.sha')"
+          if [ "${HEAD_SHA}" != "${COMMIT_SHA}" ]; then
+            echo "::error::Branch head ${HEAD_SHA} != reported commit ${COMMIT_SHA}."
+            exit 1
+          fi
+
+          # 3. The commit must be signed — producing signed, ruleset-compliant
+          #    commits is the whole point of this action.
+          VERIFIED="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${COMMIT_SHA}" --jq '.commit.verification.verified')"
+          if [ "${VERIFIED}" != "true" ]; then
+            REASON="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${COMMIT_SHA}" --jq '.commit.verification.reason')"
+            echo "::error::Commit ${COMMIT_SHA} is not signed (verified=${VERIFIED}, reason=${REASON})."
+            exit 1
+          fi
+
+          # 4. The committed content must round-trip — proves the createBlob /
+          #    createTree path wrote what we asked for, not an empty tree.
+          ACTUAL="$(gh api "repos/${GITHUB_REPOSITORY}/contents/tag-smoke.txt?ref=${COMMIT_SHA}" \
+            --jq '.content' | tr -d '\n' | base64 -d)"
+          if [ "${ACTUAL}" != "${EXPECTED_CONTENT}" ]; then
+            echo "::error::Committed content mismatch. Expected '${EXPECTED_CONTENT}', got '${ACTUAL}'."
+            exit 1
+          fi
+
+          echo "Verified: released action @${TAG} produced signed commit ${COMMIT_SHA} on ${SCRATCH_BRANCH} with the expected content."
+
+      - name: Delete scratch branch
+        if: always()
+        run: git push origin --delete "${SCRATCH_BRANCH}" || true
