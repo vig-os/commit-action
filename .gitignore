@@ -7,7 +7,8 @@
 # upgrade and appends a per-language fragment (Python / Node / Rust) detected
 # from the repo's marker files (pyproject.toml / package.json / Cargo.toml).
 # Do not hand-edit durable ignores here — they will not survive an upgrade.
-# Put repo-specific ignores in a committed file your team owns instead.
+# Put repo-specific root ignores in .gitignore.project (preserved on upgrade);
+# init-workspace.sh appends its contents here on every regeneration (#1092).
 
 # Environments
 .env
@@ -43,17 +44,31 @@ node_modules/
 # TypeScript incremental build info
 *.tsbuildinfo
 
+# tsc/ncc emit .d.ts + .d.ts.map declaration byproducts under dist/src/ (#1092);
+# the .d.ts.map files embed absolute file:// paths regenerated per checkout, so
+# ignore them — WITHOUT a blanket dist/ ignore, keeping the committed bundle
+# dist/index.js + dist/package.json tracked.
+dist/src/
+
 # Coverage reports
 coverage/
 .nyc_output/
 
-# ── Repo-owned additions (see caveat) ─────────────────────────────────────────
-# WARNING: this is a MANAGED file — a devkit scaffold upgrade regenerates it and
-# drops the lines below. Re-add them after any `install.sh --force` upgrade (or
-# fold them in upstream — tracked in vig-os/devkit). Kept here because git has no
-# committed way to ignore a repo-root path other than the root .gitignore.
+# Repo-specific root .gitignore entries — yours to edit; upgrades never
+# overwrite this file. This is the durable committed home for repo-ROOT ignores:
+# git honors a root ignore only from the root .gitignore, which devkit
+# regenerates on every upgrade, so entries added HERE are appended to that
+# regenerated .gitignore and survive. Put durable repo-root ignores below (not
+# in the managed .gitignore, where hand edits are lost).
 #
 # Flake-generated pre-commit config: this repo opts into flake-sourced hooks
 # (`hooks = { }` in flake.nix), which installs .pre-commit-config.yaml as a
 # /nix/store symlink. It must never be committed — the target is machine-local.
+# (The #1092 auto-seed only fires when the store symlink is resolvable at
+# scaffold time; a direnv-mode upgrade runs in a container without /nix/store,
+# so it is pinned here in the durable consumer-owned ignore instead.)
 .pre-commit-config.yaml
+#
+# Examples (uncomment / add your own):
+#   /scratch/
+#   /secrets.local.yaml
