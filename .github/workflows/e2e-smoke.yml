@@ -32,8 +32,7 @@ on:  # yamllint disable-line rule:truthy
       - 'release/**'
       - main
 
-permissions:
-  contents: write
+permissions: {}  # restrict default; job declares its own
 
 jobs:
   e2e-smoke:
@@ -41,6 +40,10 @@ jobs:
     if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    permissions:
+      # Push the scratch branch and let the action under test create a commit
+      # on it via the GitHub API.
+      contents: write
 
     env:
       # No slash: the branch name is interpolated into `gh api .../commits/{ref}`

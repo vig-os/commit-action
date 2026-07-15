@@ -34,8 +34,7 @@ on:  # yamllint disable-line rule:truthy
         required: true
         type: string
 
-permissions:
-  contents: write
+permissions: {}  # restrict default; job declares its own
 
 concurrency:
   group: published-tag-smoke-${{ inputs.ref || github.ref_name }}
@@ -46,6 +45,10 @@ jobs:
     name: Published Tag Smoke
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    permissions:
+      # Push the scratch branch and let the released action create a commit on
+      # it via the GitHub API.
+      contents: write
 
     env:
       TAG: ${{ inputs.ref || github.ref_name }}
