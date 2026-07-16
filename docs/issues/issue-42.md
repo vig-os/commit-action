@@ -2,7 +2,7 @@
 type: issue
 state: open
 created: 2026-07-14T08:32:46Z
-updated: 2026-07-15T14:15:15Z
+updated: 2026-07-15T16:15:57Z
 author: renovate[bot]
 author_url: https://github.com/renovate[bot]
 url: https://github.com/vig-os/commit-action/issues/42
@@ -13,7 +13,7 @@ milestone: none
 projects: none
 parent: none
 children: none
-synced: 2026-07-15T15:29:13.580Z
+synced: 2026-07-16T04:56:01.679Z
 ---
 
 # [Issue 42]: [Dependency Dashboard](https://github.com/vig-os/commit-action/issues/42)
@@ -24,17 +24,14 @@ This issue lists Renovate updates and detected dependencies. Read the [Dependenc
 
 The following updates are awaiting their schedule. To get an update now, click on a checkbox below.
 
- - [ ] <!-- unschedule-branch=renovate/github-actions-(minor-and-patch) -->ci(actions): update cachix/install-nix-action action to v31.11.0
-
-## PR Closed (Blocked)
-
-The following updates are blocked by an existing closed PR. To recreate the PR, click on a checkbox below.
-
- - [ ] <!-- recreate-branch=renovate/typescript-7.x -->[build(npm): update dependency typescript to v7](../pull/54)
+ - [ ] <!-- unschedule-branch=renovate/github-actions-(minor-and-patch) -->ci(actions): update github-actions (minor and patch) (`cachix/install-nix-action`, `vig-os/commit-action`)
+ - [ ] <!-- unschedule-branch=renovate/major-npm-dev-dependencies -->build(npm): update dependency typescript to v7
+ - [ ] <!-- unschedule-branch=renovate/lock-file-maintenance -->build(npm): lock file maintenance
+ - [ ] <!-- create-all-awaiting-schedule-prs -->🔐 **Create all awaiting schedule PRs at once** 🔐
 
 ## Detected Dependencies
 
-<details><summary>github-actions (20)</summary>
+<details><summary>github-actions (19)</summary>
 <blockquote>
 
 <details><summary>.github/actions/setup-devkit-toolchain/action.yml (3)</summary>
@@ -64,12 +61,6 @@ The following updates are blocked by an existing closed PR. To recreate the PR, 
  - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
  - `github/codeql-action v4@99df26d4f13ea111d4ec1a7dddef6063f76b97e9`
  - `github/codeql-action v4@99df26d4f13ea111d4ec1a7dddef6063f76b97e9`
- - `ubuntu 24.04`
-
-</details>
-
-<details><summary>.github/workflows/dist-check-stub.yml (1)</summary>
-
  - `ubuntu 24.04`
 
 </details>
@@ -110,12 +101,12 @@ The following updates are blocked by an existing closed PR. To recreate the PR, 
  - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
  - `actions/create-github-app-token v3@bcd2ba49218906704ab6c1aa796996da409d3eb1`
  - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
- - `vig-os/commit-action v0.2.0@1bc004353d08d9332a0cb54920b148256220c8e0`
+ - `vig-os/commit-action v0.2.0@1bc004353d08d9332a0cb54920b148256220c8e0` → [Updates: `v0.3.0`]
  - `actions/create-github-app-token v3@bcd2ba49218906704ab6c1aa796996da409d3eb1`
  - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
  - `actions/create-github-app-token v3@bcd2ba49218906704ab6c1aa796996da409d3eb1`
  - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
- - `vig-os/commit-action v0.2.0@1bc004353d08d9332a0cb54920b148256220c8e0`
+ - `vig-os/commit-action v0.2.0@1bc004353d08d9332a0cb54920b148256220c8e0` → [Updates: `v0.3.0`]
  - `ubuntu 24.04`
  - `ubuntu 24.04`
  - `ubuntu 24.04`
@@ -160,7 +151,7 @@ The following updates are blocked by an existing closed PR. To recreate the PR, 
  - `actions/create-github-app-token v3@bcd2ba49218906704ab6c1aa796996da409d3eb1`
  - `actions/create-github-app-token v3@bcd2ba49218906704ab6c1aa796996da409d3eb1`
  - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
- - `vig-os/commit-action v0.2.0@1bc004353d08d9332a0cb54920b148256220c8e0`
+ - `vig-os/commit-action v0.2.0@1bc004353d08d9332a0cb54920b148256220c8e0` → [Updates: `v0.3.0`]
  - `actions/create-github-app-token v3@bcd2ba49218906704ab6c1aa796996da409d3eb1`
  - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
  - `ubuntu 24.04`
@@ -212,7 +203,7 @@ The following updates are blocked by an existing closed PR. To recreate the PR, 
 
  - `actions/create-github-app-token v3@bcd2ba49218906704ab6c1aa796996da409d3eb1`
  - `actions/download-artifact v8.0.1@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c`
- - `vig-os/commit-action v0.2.0@1bc004353d08d9332a0cb54920b148256220c8e0`
+ - `vig-os/commit-action v0.2.0@1bc004353d08d9332a0cb54920b148256220c8e0` → [Updates: `v0.3.0`]
  - `ubuntu 24.04`
 
 </details>
@@ -233,7 +224,7 @@ The following updates are blocked by an existing closed PR. To recreate the PR, 
  - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
  - `actions/cache v6.1.0@55cc8345863c7cc4c66a329aec7e433d2d1c52a9`
  - `vig-os/sync-issues-action v0.2.2@bad447d330526a7313ffddae084010c39b335fc1`
- - `vig-os/commit-action v0.2.0@1bc004353d08d9332a0cb54920b148256220c8e0`
+ - `vig-os/commit-action v0.2.0@1bc004353d08d9332a0cb54920b148256220c8e0` → [Updates: `v0.3.0`]
  - `actions/cache v6.1.0@55cc8345863c7cc4c66a329aec7e433d2d1c52a9`
  - `ubuntu 24.04`
  - `ubuntu 24.04`
