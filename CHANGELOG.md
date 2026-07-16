@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Renovate dependency update** ([#98](https://github.com/vig-os/commit-action/pull/98))
+  - Update `cachix/install-nix-action` from `v31.10.7` to `v31.11.0`
+  - Update `vig-os/commit-action` from `v0.2.0` to `v0.3.0`
+  - Update `vig-os/sync-issues-action` from `v0.2.2` to `v0.3.0`
+
 ### Deprecated
 
 ### Removed
