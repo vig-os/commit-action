@@ -64,6 +64,13 @@
       "matchDepTypes": ["dependencies"],
       "matchUpdateTypes": ["minor", "patch"],
       "groupName": "npm (minor and patch)"
+    },
+    {
+      "description": "Hold the typescript major (v7, the native compiler port): our toolchain peers exclude it — ts-jest@29 pins typescript '>=4.3 <7' and typescript-eslint@8 pins '>=4.8.4 <6.1.0'. Remove this rule (and bump all three together) once ts-jest and typescript-eslint ship TS 7-compatible releases. Refs #101.",
+      "matchManagers": ["npm"],
+      "matchPackageNames": ["typescript"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
     }
   ]
 }
