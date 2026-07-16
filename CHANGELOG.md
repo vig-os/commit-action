@@ -11,20 +11,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Renovate dependency update** ([#98](https://github.com/vig-os/commit-action/pull/98))
-  - Update `cachix/install-nix-action` from `v31.10.7` to `v31.11.0`
-  - Update `vig-os/commit-action` from `v0.2.0` to `v0.3.0`
-  - Update `vig-os/sync-issues-action` from `v0.2.2` to `v0.3.0`
-
 ### Deprecated
 
 ### Removed
 
 ### Fixed
 
-- The `e2e-smoke` and `published-tag-smoke` verify steps no longer flake on GitHub's read-after-write replication lag. Their "branch head points at the reported commit" assertion read the scratch-branch head via the REST API immediately after the action's `updateRef` returned, and could observe the stale pre-commit head — the action had committed correctly, but the check reported a mismatch. Both steps now poll the branch head for the reported `commit-sha` with a bounded retry (up to 5 attempts, 3s apart) before failing, while keeping the hard failure after the budget so a genuine no-op (the #58 class of bug) is still caught (issue #96).
-
 ### Security
+
+## [0.3.1] - TBD
+
+### Changed
+
+- **Renovate dependency update** ([#98](https://github.com/vig-os/commit-action/pull/98))
+  - Update `cachix/install-nix-action` from `v31.10.7` to `v31.11.0`
+  - Update `vig-os/commit-action` from `v0.2.0` to `v0.3.0`
+  - Update `vig-os/sync-issues-action` from `v0.2.2` to `v0.3.0`
+
+### Fixed
+
+- The `e2e-smoke` and `published-tag-smoke` verify steps no longer flake on GitHub's read-after-write replication lag. Their "branch head points at the reported commit" assertion read the scratch-branch head via the REST API immediately after the action's `updateRef` returned, and could observe the stale pre-commit head — the action had committed correctly, but the check reported a mismatch. Both steps now poll the branch head for the reported `commit-sha` with a bounded retry (up to 5 attempts, 3s apart) before failing, while keeping the hard failure after the budget so a genuine no-op (the #58 class of bug) is still caught (issue #96).
 
 ## [v0.3.0](https://github.com/vig-os/commit-action/releases/tag/v0.3.0) - 2026-07-15
 
