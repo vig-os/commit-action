@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Adopt vigOS devkit 1.3.1** ([#105](https://github.com/vig-os/commit-action/issues/105))
+  - Re-scaffold from devkit 1.2.1 to 1.3.1 in direnv mode; pins move in lockstep (`.vig-os` `DEVKIT_VERSION=1.3.1`, `flake.nix` `?ref=1.3.1`, `flake.lock` re-locked to the 1.3.1 revision).
+  - CodeQL push-path filter is now per-language (vig-os/devkit#1142): the managed `codeql.yml` triggers on `**.ts`/`**.js`/`**.mjs`/`**.cjs` (plus `.github/workflows/**`) instead of the stale `**.py`.
+  - The release orchestrator's `extension` caller job now declares the consumer-seam token ceiling (vig-os/devkit#1144): `contents: read`, `packages: write`, `id-token: write`, `attestations: write`.
+  - First upgrade across the 1.3.0 gitignore migration (vig-os/devkit#1145): the consumer-owned `.gitignore.project` no longer accretes scaffold-committed filenames or cross-language junk, and scaffold-committed files stay tracked.
+  - Managed CI gains a `dependency-review` gate and the release/promote workflows pick up mergeability and floating-tag-creation hardening; the TypeScript-major Renovate hold (Refs #101) moves from the managed `renovate-default.json` into the consumer-owned `renovate.json` so it survives future re-scaffolds.
+
 ### Deprecated
 
 ### Removed
