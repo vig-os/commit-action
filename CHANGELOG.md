@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Adopt vigOS devkit 1.4.0** ([#107](https://github.com/vig-os/commit-action/issues/107))
+  - Re-scaffold from devkit 1.3.1 to 1.4.0 in direnv mode; pins move in lockstep (`.vig-os` `DEVKIT_VERSION`, `flake.nix` `?ref`, `flake.lock` re-locked to the matching revision). Delivery mode, tag prefix (`v`), and floating tags (`major,minor`) are preserved from `.vig-os`.
+  - The devkit-managed workflows are zizmor-audited (vig-os/devkit#1182): `persist-credentials: false` is set on the read-only checkouts (CI, `codeql.yml`, `renovate-changelog-build.yml`, `sync-issues.yml`), the `sync-main-to-dev` cleanup step moves its release-app token into `env:`, and a devkit-owned `zizmor.yml` baseline ships so this repo maintains no baseline of its own.
+  - New optional `.vig-os` key `DEVKIT_CI_RUNNER` (vig-os/devkit#1173): `resolve-toolchain` emits a `runner-json` output and the managed `ci.yml` toolchain jobs route `runs-on` through it; absent (default) keeps the hosted `ubuntu-24.04` runner.
+  - The direnv CI preamble now forwards the flake `shellHook` environment to CI (vig-os/devkit#1180), and the base `justfile` ships a `with-native-libs` helper for `uvx` tools with native wheels (vig-os/devkit#1181).
+  - `pymarkdown` is packaged in the flake and promoted to a `language: system` hook (vig-os/devkit#1170); opt-in-only additions (typst `docs` module #1178, `gitleaks` hook #1172, nix-language support #1171) have no effect here unless enabled.
 - **Adopt vigOS devkit 1.3.1** ([#105](https://github.com/vig-os/commit-action/issues/105))
   - Re-scaffold from devkit 1.2.1 to 1.3.1 in direnv mode; pins move in lockstep (`.vig-os` `DEVKIT_VERSION=1.3.1`, `flake.nix` `?ref=1.3.1`, `flake.lock` re-locked to the 1.3.1 revision).
   - CodeQL push-path filter is now per-language (vig-os/devkit#1142): the managed `codeql.yml` triggers on `**.ts`/`**.js`/`**.mjs`/`**.cjs` (plus `.github/workflows/**`) instead of the stale `**.py`.
