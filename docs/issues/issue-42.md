@@ -2,7 +2,7 @@
 type: issue
 state: open
 created: 2026-07-14T08:32:46Z
-updated: 2026-07-16T17:04:34Z
+updated: 2026-07-17T01:19:32Z
 author: renovate[bot]
 author_url: https://github.com/renovate[bot]
 url: https://github.com/vig-os/commit-action/issues/42
@@ -13,7 +13,7 @@ milestone: none
 projects: none
 parent: none
 children: none
-synced: 2026-07-16T17:18:51.405Z
+synced: 2026-07-17T04:59:07.265Z
 ---
 
 # [Issue 42]: [Dependency Dashboard](https://github.com/vig-os/commit-action/issues/42)
@@ -25,14 +25,9 @@ This issue lists Renovate updates and detected dependencies. Read the [Dependenc
 The following updates are awaiting their schedule. To get an update now, click on a checkbox below.
 
  - [ ] <!-- unschedule-branch=renovate/github-codeql-action-digest -->chore(deps): update github/codeql-action digest to 7188fc3
+ - [ ] <!-- unschedule-branch=renovate/github-actions-(minor-and-patch) -->ci(actions): update github-actions (minor and patch) (`vig-os/commit-action`, `vig-os/sync-issues-action`)
  - [ ] <!-- unschedule-branch=renovate/lock-file-maintenance -->build(npm): lock file maintenance
  - [ ] <!-- create-all-awaiting-schedule-prs -->🔐 **Create all awaiting schedule PRs at once** 🔐
-
-## PR Closed (Blocked)
-
-The following updates are blocked by an existing closed PR. To recreate the PR, click on a checkbox below.
-
- - [ ] <!-- recreate-branch=renovate/major-npm-dev-dependencies -->[build(npm): update dependency typescript to v7](../pull/99)
 
 ## Detected Dependencies
 
@@ -106,12 +101,12 @@ The following updates are blocked by an existing closed PR. To recreate the PR, 
  - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
  - `actions/create-github-app-token v3@bcd2ba49218906704ab6c1aa796996da409d3eb1`
  - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
- - `vig-os/commit-action v0.3.0@96ba909f2151cef35550b032cff210de671c9c9e`
+ - `vig-os/commit-action v0.3.0@96ba909f2151cef35550b032cff210de671c9c9e` → [Updates: `v0.3.1`]
  - `actions/create-github-app-token v3@bcd2ba49218906704ab6c1aa796996da409d3eb1`
  - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
  - `actions/create-github-app-token v3@bcd2ba49218906704ab6c1aa796996da409d3eb1`
  - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
- - `vig-os/commit-action v0.3.0@96ba909f2151cef35550b032cff210de671c9c9e`
+ - `vig-os/commit-action v0.3.0@96ba909f2151cef35550b032cff210de671c9c9e` → [Updates: `v0.3.1`]
  - `ubuntu 24.04`
  - `ubuntu 24.04`
  - `ubuntu 24.04`
@@ -156,7 +151,7 @@ The following updates are blocked by an existing closed PR. To recreate the PR, 
  - `actions/create-github-app-token v3@bcd2ba49218906704ab6c1aa796996da409d3eb1`
  - `actions/create-github-app-token v3@bcd2ba49218906704ab6c1aa796996da409d3eb1`
  - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
- - `vig-os/commit-action v0.3.0@96ba909f2151cef35550b032cff210de671c9c9e`
+ - `vig-os/commit-action v0.3.0@96ba909f2151cef35550b032cff210de671c9c9e` → [Updates: `v0.3.1`]
  - `actions/create-github-app-token v3@bcd2ba49218906704ab6c1aa796996da409d3eb1`
  - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
  - `ubuntu 24.04`
@@ -208,7 +203,7 @@ The following updates are blocked by an existing closed PR. To recreate the PR, 
 
  - `actions/create-github-app-token v3@bcd2ba49218906704ab6c1aa796996da409d3eb1`
  - `actions/download-artifact v8.0.1@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c`
- - `vig-os/commit-action v0.3.0@96ba909f2151cef35550b032cff210de671c9c9e`
+ - `vig-os/commit-action v0.3.0@96ba909f2151cef35550b032cff210de671c9c9e` → [Updates: `v0.3.1`]
  - `ubuntu 24.04`
 
 </details>
@@ -228,8 +223,8 @@ The following updates are blocked by an existing closed PR. To recreate the PR, 
  - `actions/create-github-app-token v3@bcd2ba49218906704ab6c1aa796996da409d3eb1`
  - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
  - `actions/cache v6.1.0@55cc8345863c7cc4c66a329aec7e433d2d1c52a9`
- - `vig-os/sync-issues-action v0.3.0@f530c0f256e651cbbc36c29674ecee3c854b4f80`
- - `vig-os/commit-action v0.3.0@96ba909f2151cef35550b032cff210de671c9c9e`
+ - `vig-os/sync-issues-action v0.3.0@f530c0f256e651cbbc36c29674ecee3c854b4f80` → [Updates: `v0.4.0`]
+ - `vig-os/commit-action v0.3.0@96ba909f2151cef35550b032cff210de671c9c9e` → [Updates: `v0.3.1`]
  - `actions/cache v6.1.0@55cc8345863c7cc4c66a329aec7e433d2d1c52a9`
  - `ubuntu 24.04`
  - `ubuntu 24.04`
