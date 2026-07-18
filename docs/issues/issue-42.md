@@ -2,7 +2,7 @@
 type: issue
 state: open
 created: 2026-07-14T08:32:46Z
-updated: 2026-07-17T01:19:32Z
+updated: 2026-07-17T08:01:41Z
 author: renovate[bot]
 author_url: https://github.com/renovate[bot]
 url: https://github.com/vig-os/commit-action/issues/42
@@ -13,7 +13,7 @@ milestone: none
 projects: none
 parent: none
 children: none
-synced: 2026-07-17T04:59:07.265Z
+synced: 2026-07-18T04:44:07.662Z
 ---
 
 # [Issue 42]: [Dependency Dashboard](https://github.com/vig-os/commit-action/issues/42)
@@ -24,10 +24,7 @@ This issue lists Renovate updates and detected dependencies. Read the [Dependenc
 
 The following updates are awaiting their schedule. To get an update now, click on a checkbox below.
 
- - [ ] <!-- unschedule-branch=renovate/github-codeql-action-digest -->chore(deps): update github/codeql-action digest to 7188fc3
- - [ ] <!-- unschedule-branch=renovate/github-actions-(minor-and-patch) -->ci(actions): update github-actions (minor and patch) (`vig-os/commit-action`, `vig-os/sync-issues-action`)
  - [ ] <!-- unschedule-branch=renovate/lock-file-maintenance -->build(npm): lock file maintenance
- - [ ] <!-- create-all-awaiting-schedule-prs -->🔐 **Create all awaiting schedule PRs at once** 🔐
 
 ## Detected Dependencies
 
@@ -42,12 +39,15 @@ The following updates are awaiting their schedule. To get an update now, click o
 
 </details>
 
-<details><summary>.github/workflows/ci.yml (9)</summary>
+<details><summary>.github/workflows/ci.yml (12)</summary>
 
  - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
  - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
  - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
  - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
+ - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
+ - `actions/dependency-review-action v5.0.0@a1d282b36b6f3519aa1f3fc636f609c47dddb294`
+ - `ubuntu 24.04`
  - `ubuntu 24.04`
  - `ubuntu 24.04`
  - `ubuntu 24.04`
@@ -59,8 +59,8 @@ The following updates are awaiting their schedule. To get an update now, click o
 <details><summary>.github/workflows/codeql.yml (4)</summary>
 
  - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
- - `github/codeql-action v4@99df26d4f13ea111d4ec1a7dddef6063f76b97e9` → [Updates: `v4`]
- - `github/codeql-action v4@99df26d4f13ea111d4ec1a7dddef6063f76b97e9` → [Updates: `v4`]
+ - `github/codeql-action v4@7188fc363630916deb702c7fdcf4e481b751f97a`
+ - `github/codeql-action v4@7188fc363630916deb702c7fdcf4e481b751f97a`
  - `ubuntu 24.04`
 
 </details>
@@ -101,12 +101,12 @@ The following updates are awaiting their schedule. To get an update now, click o
  - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
  - `actions/create-github-app-token v3@bcd2ba49218906704ab6c1aa796996da409d3eb1`
  - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
- - `vig-os/commit-action v0.3.0@96ba909f2151cef35550b032cff210de671c9c9e` → [Updates: `v0.3.1`]
+ - `vig-os/commit-action v0.3.1@3a0588ec060d9647bf406e064cf9e6192a431864`
  - `actions/create-github-app-token v3@bcd2ba49218906704ab6c1aa796996da409d3eb1`
  - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
  - `actions/create-github-app-token v3@bcd2ba49218906704ab6c1aa796996da409d3eb1`
  - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
- - `vig-os/commit-action v0.3.0@96ba909f2151cef35550b032cff210de671c9c9e` → [Updates: `v0.3.1`]
+ - `vig-os/commit-action v0.3.1@3a0588ec060d9647bf406e064cf9e6192a431864`
  - `ubuntu 24.04`
  - `ubuntu 24.04`
  - `ubuntu 24.04`
@@ -151,7 +151,7 @@ The following updates are awaiting their schedule. To get an update now, click o
  - `actions/create-github-app-token v3@bcd2ba49218906704ab6c1aa796996da409d3eb1`
  - `actions/create-github-app-token v3@bcd2ba49218906704ab6c1aa796996da409d3eb1`
  - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
- - `vig-os/commit-action v0.3.0@96ba909f2151cef35550b032cff210de671c9c9e` → [Updates: `v0.3.1`]
+ - `vig-os/commit-action v0.3.1@3a0588ec060d9647bf406e064cf9e6192a431864`
  - `actions/create-github-app-token v3@bcd2ba49218906704ab6c1aa796996da409d3eb1`
  - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
  - `ubuntu 24.04`
@@ -203,7 +203,7 @@ The following updates are awaiting their schedule. To get an update now, click o
 
  - `actions/create-github-app-token v3@bcd2ba49218906704ab6c1aa796996da409d3eb1`
  - `actions/download-artifact v8.0.1@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c`
- - `vig-os/commit-action v0.3.0@96ba909f2151cef35550b032cff210de671c9c9e` → [Updates: `v0.3.1`]
+ - `vig-os/commit-action v0.3.1@3a0588ec060d9647bf406e064cf9e6192a431864`
  - `ubuntu 24.04`
 
 </details>
@@ -212,7 +212,7 @@ The following updates are awaiting their schedule. To get an update now, click o
 
  - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
  - `ossf/scorecard-action v2.4.3@4eaacf0543bb3f2c246792bd56e8cdeffafb205a`
- - `github/codeql-action v4@99df26d4f13ea111d4ec1a7dddef6063f76b97e9` → [Updates: `v4`]
+ - `github/codeql-action v4@7188fc363630916deb702c7fdcf4e481b751f97a`
  - `ubuntu 24.04`
 
 </details>
@@ -223,8 +223,8 @@ The following updates are awaiting their schedule. To get an update now, click o
  - `actions/create-github-app-token v3@bcd2ba49218906704ab6c1aa796996da409d3eb1`
  - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0`
  - `actions/cache v6.1.0@55cc8345863c7cc4c66a329aec7e433d2d1c52a9`
- - `vig-os/sync-issues-action v0.3.0@f530c0f256e651cbbc36c29674ecee3c854b4f80` → [Updates: `v0.4.0`]
- - `vig-os/commit-action v0.3.0@96ba909f2151cef35550b032cff210de671c9c9e` → [Updates: `v0.3.1`]
+ - `vig-os/sync-issues-action v0.4.0@285a0af876bac99a0e914a64a1cb925dd913f38a`
+ - `vig-os/commit-action v0.3.1@3a0588ec060d9647bf406e064cf9e6192a431864`
  - `actions/cache v6.1.0@55cc8345863c7cc4c66a329aec7e433d2d1c52a9`
  - `ubuntu 24.04`
  - `ubuntu 24.04`
