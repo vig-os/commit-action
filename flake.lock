@@ -119,11 +119,11 @@
     },
     "nixpkgs-unstable": {
       "locked": {
-        "lastModified": 1783816212,
-        "narHash": "sha256-2aZisVTVGSFEk3MYcOiWQp3zvwyzbqpktB69Rcfp150=",
+        "lastModified": 1784453100,
+        "narHash": "sha256-zpGZb8FYui+i8KLtC0nlcmb0voR2zB80Qn8pe7lzIbk=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "3b32825de172d0bc85664f495edb096b10862524",
+        "rev": "b471514bed69eff5255c8e63c1f80e5fe56c616f",
         "type": "github"
       },
       "original": {
@@ -224,16 +224,15 @@
         "treefmt-nix": "treefmt-nix"
       },
       "locked": {
-        "lastModified": 1784272477,
-        "narHash": "sha256-4e67ct6uvGBBtdagM0sbUsTlD1QYIJ1HXsEcmqIitCE=",
+        "lastModified": 1784561107,
+        "narHash": "sha256-xIXQ5prcqVdLCcBDk+8q/NMWypN4Q2DZjl90A+f73ho=",
         "owner": "vig-os",
         "repo": "devkit",
-        "rev": "5cfbac3038882cd124e7490271e26bc6490a271a",
+        "rev": "d16541f52fac305a1c08fc09a6c4596c2d54f457",
         "type": "github"
       },
       "original": {
         "owner": "vig-os",
-        "ref": "1.3.1",
         "repo": "devkit",
         "type": "github"
       }
