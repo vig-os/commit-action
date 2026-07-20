@@ -2,7 +2,7 @@
 type: issue
 state: open
 created: 2026-07-14T08:32:46Z
-updated: 2026-07-17T08:01:41Z
+updated: 2026-07-20T03:11:08Z
 author: renovate[bot]
 author_url: https://github.com/renovate[bot]
 url: https://github.com/vig-os/commit-action/issues/42
@@ -13,18 +13,18 @@ milestone: none
 projects: none
 parent: none
 children: none
-synced: 2026-07-18T04:44:07.662Z
+synced: 2026-07-20T05:34:46.119Z
 ---
 
 # [Issue 42]: [Dependency Dashboard](https://github.com/vig-os/commit-action/issues/42)
 
 This issue lists Renovate updates and detected dependencies. Read the [Dependency Dashboard](https://docs.renovatebot.com/key-concepts/dashboard/) docs to learn more.<br>[View this repository on the Mend.io Web Portal](https://developer.mend.io/github/vig-os/commit-action).
 
-## Awaiting Schedule
+## Open
 
-The following updates are awaiting their schedule. To get an update now, click on a checkbox below.
+The following updates have all been created. To force a retry/rebase of any, click on a checkbox below.
 
- - [ ] <!-- unschedule-branch=renovate/lock-file-maintenance -->build(npm): lock file maintenance
+ - [ ] <!-- rebase-branch=renovate/lock-file-maintenance -->[build(npm): lock file maintenance](../pull/109)
 
 ## Detected Dependencies
 
