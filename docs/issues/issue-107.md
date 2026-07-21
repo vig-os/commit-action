@@ -1,19 +1,19 @@
 ---
 type: issue
-state: open
+state: closed
 created: 2026-07-17T14:41:54Z
-updated: 2026-07-17T14:41:54Z
+updated: 2026-07-20T16:34:27Z
 author: c-vigo
 author_url: https://github.com/c-vigo
 url: https://github.com/vig-os/commit-action/issues/107
-comments: 0
+comments: 1
 labels: none
 assignees: none
 milestone: none
 projects: none
 parent: none
 children: none
-synced: 2026-07-18T04:44:06.946Z
+synced: 2026-07-21T05:16:33.816Z
 ---
 
 # [Issue 107]: [Adopt devkit 1.4.0](https://github.com/vig-os/commit-action/issues/107)
@@ -54,4 +54,12 @@ pins before merge.
 
 Preserved from `.vig-os`: `DEVKIT_MODE=direnv`, `DEVKIT_TAG_PREFIX=v`,
 `DEVKIT_FLOATING_TAGS=major,minor`.
+
+---
+
+# [Comment #1]() by [c-vigo]()
+
+_Posted on July 20, 2026 at 04:34 PM_
+
+devkit 1.4.0 adopted via PR #108 (merged). Validated across rc5/rc6 and bumped to the final release with floating vigos input.
 
