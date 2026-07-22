@@ -2,7 +2,7 @@
 type: issue
 state: open
 created: 2026-07-14T08:32:46Z
-updated: 2026-07-21T04:44:05Z
+updated: 2026-07-21T18:31:15Z
 author: renovate[bot]
 author_url: https://github.com/renovate[bot]
 url: https://github.com/vig-os/commit-action/issues/42
@@ -13,7 +13,7 @@ milestone: none
 projects: none
 parent: none
 children: none
-synced: 2026-07-21T05:16:34.095Z
+synced: 2026-07-22T05:15:20.813Z
 ---
 
 # [Issue 42]: [Dependency Dashboard](https://github.com/vig-os/commit-action/issues/42)
@@ -24,8 +24,10 @@ This issue lists Renovate updates and detected dependencies. Read the [Dependenc
 
 The following updates are awaiting their schedule. To get an update now, click on a checkbox below.
 
+ - [ ] <!-- unschedule-branch=renovate/github-codeql-action-digest -->chore(deps): update github/codeql-action digest to e064762
+ - [ ] <!-- unschedule-branch=renovate/npm-dev-dependencies -->build(npm): update npm dev dependencies (`prettier`, `typescript-eslint`)
  - [ ] <!-- unschedule-branch=renovate/github-actions-(minor-and-patch) -->ci(actions): update actions/checkout action to v7.0.1
- - [ ] <!-- unschedule-branch=renovate/npm-dev-dependencies -->build(npm): update dependency typescript-eslint to v8.65.0
+ - [ ] <!-- unschedule-branch=renovate/astral-sh-setup-uv-9.x -->ci(actions): update astral-sh/setup-uv action to v9
  - [ ] <!-- create-all-awaiting-schedule-prs -->🔐 **Create all awaiting schedule PRs at once** 🔐
 
 ## Open
@@ -43,7 +45,7 @@ The following updates have all been created. To force a retry/rebase of any, cli
 
  - `cachix/install-nix-action v31.11.0@630ae543ea3a38a9a4166f03376c02c50f408342`
  - `cachix/cachix-action v17@5f2d7c5294214f71b873db4b969586b980625e71`
- - `astral-sh/setup-uv v8.3.2@11f9893b081a58869d3b5fccaea48c9e9e46f990`
+ - `astral-sh/setup-uv v8.3.2@11f9893b081a58869d3b5fccaea48c9e9e46f990` → [Updates: `v9.0.0`]
 
 </details>
 
@@ -63,8 +65,8 @@ The following updates have all been created. To force a retry/rebase of any, cli
 <details><summary>.github/workflows/codeql.yml (4)</summary>
 
  - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0` → [Updates: `v7.0.1`]
- - `github/codeql-action v4@7188fc363630916deb702c7fdcf4e481b751f97a`
- - `github/codeql-action v4@7188fc363630916deb702c7fdcf4e481b751f97a`
+ - `github/codeql-action v4@7188fc363630916deb702c7fdcf4e481b751f97a` → [Updates: `v4`]
+ - `github/codeql-action v4@7188fc363630916deb702c7fdcf4e481b751f97a` → [Updates: `v4`]
  - `ubuntu 24.04`
 
 </details>
@@ -216,7 +218,7 @@ The following updates have all been created. To force a retry/rebase of any, cli
 
  - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0` → [Updates: `v7.0.1`]
  - `ossf/scorecard-action v2.4.3@4eaacf0543bb3f2c246792bd56e8cdeffafb205a`
- - `github/codeql-action v4@7188fc363630916deb702c7fdcf4e481b751f97a`
+ - `github/codeql-action v4@7188fc363630916deb702c7fdcf4e481b751f97a` → [Updates: `v4`]
  - `ubuntu 24.04`
 
 </details>
@@ -265,7 +267,7 @@ The following updates have all been created. To force a retry/rebase of any, cli
  - `eslint ^10.7.0`
  - `globals ^17.7.0`
  - `jest ^30.4.2`
- - `prettier ^3.1.0`
+ - `prettier ^3.1.0` → [Updates: `^3.1.0`]
  - `ts-jest ^29.1.1`
  - `tsx ^4.7.0`
  - `typescript ^5.3.2` → [Updates: `^7.0.0`]
