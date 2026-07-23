@@ -7,7 +7,7 @@
 
 # Scaffold/image version pin (managed by release automation). Readers also
 # accept the legacy DEVCONTAINER_VERSION key for un-migrated consumers (#781).
-DEVKIT_VERSION=1.4.1-rc3
+DEVKIT_VERSION=1.4.1-rc4
 
 # Delivery mode: devcontainer | direnv | both | bare. Ships empty (= unset:
 # resolved and written back on scaffold) so an aborted upgrade can never
