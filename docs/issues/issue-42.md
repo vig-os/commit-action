@@ -2,7 +2,7 @@
 type: issue
 state: open
 created: 2026-07-14T08:32:46Z
-updated: 2026-07-22T09:48:30Z
+updated: 2026-07-23T23:38:07Z
 author: renovate[bot]
 author_url: https://github.com/renovate[bot]
 url: https://github.com/vig-os/commit-action/issues/42
@@ -13,7 +13,7 @@ milestone: none
 projects: none
 parent: none
 children: none
-synced: 2026-07-23T05:20:29.046Z
+synced: 2026-07-24T05:16:28.379Z
 ---
 
 # [Issue 42]: [Dependency Dashboard](https://github.com/vig-os/commit-action/issues/42)
@@ -26,7 +26,7 @@ The following updates are awaiting their schedule. To get an update now, click o
 
  - [ ] <!-- unschedule-branch=renovate/github-codeql-action-digest -->chore(deps): update github/codeql-action digest to e4fba86
  - [ ] <!-- unschedule-branch=renovate/npm-dev-dependencies -->build(npm): update npm dev dependencies (`prettier`, `ts-jest`, `typescript-eslint`)
- - [ ] <!-- unschedule-branch=renovate/github-actions-(minor-and-patch) -->ci(actions): update actions/checkout action to v7.0.1
+ - [ ] <!-- unschedule-branch=renovate/github-actions-(minor-and-patch) -->ci(actions): update github-actions (minor and patch) (`actions/checkout`, `ossf/scorecard-action`)
  - [ ] <!-- unschedule-branch=renovate/astral-sh-setup-uv-9.x -->ci(actions): update astral-sh/setup-uv action to v9
  - [ ] <!-- create-all-awaiting-schedule-prs -->🔐 **Create all awaiting schedule PRs at once** 🔐
 
@@ -217,7 +217,7 @@ The following updates have all been created. To force a retry/rebase of any, cli
 <details><summary>.github/workflows/scorecard.yml (4)</summary>
 
  - `actions/checkout v7.0.0@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0` → [Updates: `v7.0.1`]
- - `ossf/scorecard-action v2.4.3@4eaacf0543bb3f2c246792bd56e8cdeffafb205a`
+ - `ossf/scorecard-action v2.4.3@4eaacf0543bb3f2c246792bd56e8cdeffafb205a` → [Updates: `v2.4.4`]
  - `github/codeql-action v4@7188fc363630916deb702c7fdcf4e481b751f97a` → [Updates: `v4`]
  - `ubuntu 24.04`
 
