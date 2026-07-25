@@ -2,7 +2,7 @@
 type: issue
 state: open
 created: 2026-07-14T08:32:46Z
-updated: 2026-07-23T23:38:07Z
+updated: 2026-07-25T00:16:00Z
 author: renovate[bot]
 author_url: https://github.com/renovate[bot]
 url: https://github.com/vig-os/commit-action/issues/42
@@ -13,7 +13,7 @@ milestone: none
 projects: none
 parent: none
 children: none
-synced: 2026-07-24T05:16:28.379Z
+synced: 2026-07-25T05:00:43.970Z
 ---
 
 # [Issue 42]: [Dependency Dashboard](https://github.com/vig-os/commit-action/issues/42)
@@ -25,16 +25,11 @@ This issue lists Renovate updates and detected dependencies. Read the [Dependenc
 The following updates are awaiting their schedule. To get an update now, click on a checkbox below.
 
  - [ ] <!-- unschedule-branch=renovate/github-codeql-action-digest -->chore(deps): update github/codeql-action digest to e4fba86
- - [ ] <!-- unschedule-branch=renovate/npm-dev-dependencies -->build(npm): update npm dev dependencies (`prettier`, `ts-jest`, `typescript-eslint`)
  - [ ] <!-- unschedule-branch=renovate/github-actions-(minor-and-patch) -->ci(actions): update github-actions (minor and patch) (`actions/checkout`, `ossf/scorecard-action`)
+ - [ ] <!-- unschedule-branch=renovate/npm-dev-dependencies -->build(npm): update npm dev dependencies (`eslint`, `prettier`, `ts-jest`, `typescript-eslint`)
  - [ ] <!-- unschedule-branch=renovate/astral-sh-setup-uv-9.x -->ci(actions): update astral-sh/setup-uv action to v9
+ - [ ] <!-- unschedule-branch=renovate/lock-file-maintenance -->build(npm): lock file maintenance
  - [ ] <!-- create-all-awaiting-schedule-prs -->🔐 **Create all awaiting schedule PRs at once** 🔐
-
-## Open
-
-The following updates have all been created. To force a retry/rebase of any, click on a checkbox below.
-
- - [ ] <!-- rebase-branch=renovate/lock-file-maintenance -->[build(npm): lock file maintenance](../pull/109)
 
 ## Detected Dependencies
 
@@ -264,7 +259,7 @@ The following updates have all been created. To force a retry/rebase of any, cli
  - `@types/jest ^30.0.0`
  - `@types/node ^24.0.0`
  - `@vercel/ncc ^0.44.1`
- - `eslint ^10.7.0`
+ - `eslint ^10.7.0` → [Updates: `^10.7.0`]
  - `globals ^17.7.0`
  - `jest ^30.4.2`
  - `prettier ^3.1.0` → [Updates: `^3.1.0`]
