@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Renovate dependency update** ([#114](https://github.com/vig-os/commit-action/pull/114))
+  - Update `eslint` from `10.7.0` to `10.8.0`
+  - Update `prettier` from `3.9.5` to `3.9.6`
+  - Update `ts-jest` from `29.4.11` to `29.4.12`
+  - Update `typescript-eslint` from `8.64.0` to `8.65.0`
 - **Renovate: update `astral-sh/setup-uv` from `v8.3.2` to `v9.0.0`** ([#115](https://github.com/vig-os/commit-action/pull/115))
 - **Renovate dependency update** ([#113](https://github.com/vig-os/commit-action/pull/113))
   - Update `actions/checkout` from `v7.0.0` to `v7.0.1`
