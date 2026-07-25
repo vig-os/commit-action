@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Renovate: update `astral-sh/setup-uv` from `v8.3.2` to `v9.0.0`** ([#115](https://github.com/vig-os/commit-action/pull/115))
 - **Renovate dependency update** ([#113](https://github.com/vig-os/commit-action/pull/113))
   - Update `actions/checkout` from `v7.0.0` to `v7.0.1`
   - Update `ossf/scorecard-action` from `v2.4.3` to `v2.4.4`
