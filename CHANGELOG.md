@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Renovate: update `github/codeql-action` from `7188fc3` to `e4fba86`** ([#112](https://github.com/vig-os/commit-action/pull/112))
 - **Adopt vigOS devkit 1.4.0** ([#107](https://github.com/vig-os/commit-action/issues/107))
   - Re-scaffold from devkit 1.3.1 to 1.4.0 in direnv mode; pins move in lockstep (`.vig-os` `DEVKIT_VERSION`, `flake.nix` `?ref`, `flake.lock` re-locked to the matching revision). Delivery mode, tag prefix (`v`), and floating tags (`major,minor`) are preserved from `.vig-os`.
   - The devkit-managed workflows are zizmor-audited (vig-os/devkit#1182): `persist-credentials: false` is set on the read-only checkouts (CI, `codeql.yml`, `renovate-changelog-build.yml`, `sync-issues.yml`), the `sync-main-to-dev` cleanup step moves its release-app token into `env:`, and a devkit-owned `zizmor.yml` baseline ships so this repo maintains no baseline of its own.
