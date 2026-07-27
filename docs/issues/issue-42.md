@@ -2,7 +2,7 @@
 type: issue
 state: open
 created: 2026-07-14T08:32:46Z
-updated: 2026-07-25T15:21:26Z
+updated: 2026-07-27T01:34:35Z
 author: renovate[bot]
 author_url: https://github.com/renovate[bot]
 url: https://github.com/vig-os/commit-action/issues/42
@@ -13,18 +13,20 @@ milestone: none
 projects: none
 parent: none
 children: none
-synced: 2026-07-26T05:27:07.285Z
+synced: 2026-07-27T05:44:32.698Z
 ---
 
 # [Issue 42]: [Dependency Dashboard](https://github.com/vig-os/commit-action/issues/42)
 
 This issue lists Renovate updates and detected dependencies. Read the [Dependency Dashboard](https://docs.renovatebot.com/key-concepts/dashboard/) docs to learn more.<br>[View this repository on the Mend.io Web Portal](https://developer.mend.io/github/vig-os/commit-action).
 
-## Awaiting Schedule
+## Open
 
-The following updates are awaiting their schedule. To get an update now, click on a checkbox below.
+The following updates have all been created. To force a retry/rebase of any, click on a checkbox below.
 
- - [ ] <!-- unschedule-branch=renovate/lock-file-maintenance -->build(npm): lock file maintenance
+ - [ ] <!-- rebase-branch=renovate/npm-dev-dependencies -->[build(npm): update dependency globals to v17.8.0](../pull/119)
+ - [ ] <!-- rebase-branch=renovate/lock-file-maintenance -->[build(npm): lock file maintenance](../pull/120)
+ - [ ] <!-- rebase-all-open-prs -->**Click on this checkbox to rebase all open PRs at once**
 
 ## Detected Dependencies
 
@@ -255,7 +257,7 @@ The following updates are awaiting their schedule. To get an update now, click o
  - `@types/node ^24.0.0`
  - `@vercel/ncc ^0.44.1`
  - `eslint ^10.7.0`
- - `globals ^17.7.0`
+ - `globals ^17.7.0` → [Updates: `^17.7.0`]
  - `jest ^30.4.2`
  - `prettier ^3.1.0`
  - `ts-jest ^29.1.1`
