@@ -2,7 +2,7 @@
 type: issue
 state: open
 created: 2026-07-14T08:32:46Z
-updated: 2026-07-27T01:34:35Z
+updated: 2026-07-27T06:42:19Z
 author: renovate[bot]
 author_url: https://github.com/renovate[bot]
 url: https://github.com/vig-os/commit-action/issues/42
@@ -13,20 +13,24 @@ milestone: none
 projects: none
 parent: none
 children: none
-synced: 2026-07-27T05:44:32.698Z
+synced: 2026-07-28T04:59:24.962Z
 ---
 
 # [Issue 42]: [Dependency Dashboard](https://github.com/vig-os/commit-action/issues/42)
 
 This issue lists Renovate updates and detected dependencies. Read the [Dependency Dashboard](https://docs.renovatebot.com/key-concepts/dashboard/) docs to learn more.<br>[View this repository on the Mend.io Web Portal](https://developer.mend.io/github/vig-os/commit-action).
 
+## PR Edited (Blocked)
+
+The following updates have been manually edited so Renovate will no longer make changes. To discard all commits and start over, click on a checkbox below.
+
+ - [ ] <!-- rebase-branch=renovate/npm-dev-dependencies -->[build(npm): update dependency globals to v17.8.0](../pull/119)
+
 ## Open
 
 The following updates have all been created. To force a retry/rebase of any, click on a checkbox below.
 
- - [ ] <!-- rebase-branch=renovate/npm-dev-dependencies -->[build(npm): update dependency globals to v17.8.0](../pull/119)
  - [ ] <!-- rebase-branch=renovate/lock-file-maintenance -->[build(npm): lock file maintenance](../pull/120)
- - [ ] <!-- rebase-all-open-prs -->**Click on this checkbox to rebase all open PRs at once**
 
 ## Detected Dependencies
 
