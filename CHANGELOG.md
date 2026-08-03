@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Renovate: update `github/codeql-action` from `e4fba86` to `f205ea1`** ([#123](https://github.com/vig-os/commit-action/pull/123))
 - **Renovate dependency update** ([#114](https://github.com/vig-os/commit-action/pull/114))
   - Update `eslint` from `10.7.0` to `10.8.0`
   - Update `prettier` from `3.9.5` to `3.9.6`
