@@ -2,7 +2,7 @@
 type: issue
 state: open
 created: 2026-07-14T08:32:46Z
-updated: 2026-07-30T10:06:41Z
+updated: 2026-08-03T01:06:50Z
 author: renovate[bot]
 author_url: https://github.com/renovate[bot]
 url: https://github.com/vig-os/commit-action/issues/42
@@ -13,24 +13,19 @@ milestone: none
 projects: none
 parent: none
 children: none
-synced: 2026-07-31T05:30:35.331Z
+synced: 2026-08-03T05:36:40.796Z
 ---
 
 # [Issue 42]: [Dependency Dashboard](https://github.com/vig-os/commit-action/issues/42)
 
 This issue lists Renovate updates and detected dependencies. Read the [Dependency Dashboard](https://docs.renovatebot.com/key-concepts/dashboard/) docs to learn more.<br>[View this repository on the Mend.io Web Portal](https://developer.mend.io/github/vig-os/commit-action).
 
-## Awaiting Schedule
-
-The following updates are awaiting their schedule. To get an update now, click on a checkbox below.
-
- - [ ] <!-- unschedule-branch=renovate/github-codeql-action-digest -->chore(deps): update github/codeql-action digest to f205ea1
-
 ## PR Edited (Blocked)
 
 The following updates have been manually edited so Renovate will no longer make changes. To discard all commits and start over, click on a checkbox below.
 
- - [ ] <!-- rebase-branch=renovate/npm-dev-dependencies -->[build(npm): update dependency globals to v17.8.0](../pull/119)
+ - [ ] <!-- rebase-branch=renovate/github-codeql-action-digest -->[chore(deps): update github/codeql-action digest to f205ea1](../pull/123)
+ - [ ] <!-- rebase-branch=renovate/npm-dev-dependencies -->[build(npm): update npm dev dependencies](../pull/119) (`globals`, `tsx`)
 
 ## Open
 
@@ -271,7 +266,7 @@ The following updates have all been created. To force a retry/rebase of any, cli
  - `jest ^30.4.2`
  - `prettier ^3.1.0`
  - `ts-jest ^29.1.1`
- - `tsx ^4.7.0`
+ - `tsx ^4.7.0` → [Updates: `^4.7.0`]
  - `typescript ^5.3.2` → [Updates: `^7.0.0`]
  - `typescript-eslint ^8.64.0`
 
