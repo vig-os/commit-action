@@ -2,7 +2,7 @@
 type: issue
 state: open
 created: 2026-07-14T08:32:46Z
-updated: 2026-08-03T01:06:50Z
+updated: 2026-08-03T20:30:35Z
 author: renovate[bot]
 author_url: https://github.com/renovate[bot]
 url: https://github.com/vig-os/commit-action/issues/42
@@ -13,7 +13,7 @@ milestone: none
 projects: none
 parent: none
 children: none
-synced: 2026-08-03T05:36:40.796Z
+synced: 2026-08-04T04:59:00.673Z
 ---
 
 # [Issue 42]: [Dependency Dashboard](https://github.com/vig-os/commit-action/issues/42)
@@ -24,8 +24,8 @@ This issue lists Renovate updates and detected dependencies. Read the [Dependenc
 
 The following updates have been manually edited so Renovate will no longer make changes. To discard all commits and start over, click on a checkbox below.
 
- - [ ] <!-- rebase-branch=renovate/github-codeql-action-digest -->[chore(deps): update github/codeql-action digest to f205ea1](../pull/123)
- - [ ] <!-- rebase-branch=renovate/npm-dev-dependencies -->[build(npm): update npm dev dependencies](../pull/119) (`globals`, `tsx`)
+ - [ ] <!-- rebase-branch=renovate/github-codeql-action-digest -->[chore(deps): update github/codeql-action digest to d1ba80a](../pull/123)
+ - [ ] <!-- rebase-branch=renovate/npm-dev-dependencies -->[build(npm): update npm dev dependencies](../pull/119) (`globals`, `tsx`, `typescript-eslint`)
 
 ## Open
 
@@ -268,7 +268,7 @@ The following updates have all been created. To force a retry/rebase of any, cli
  - `ts-jest ^29.1.1`
  - `tsx ^4.7.0` → [Updates: `^4.7.0`]
  - `typescript ^5.3.2` → [Updates: `^7.0.0`]
- - `typescript-eslint ^8.64.0`
+ - `typescript-eslint ^8.64.0` → [Updates: `^8.64.0`]
 
 </details>
 
