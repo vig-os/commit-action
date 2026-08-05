@@ -56,7 +56,7 @@ jobs:
       image-tag: ${{ steps.resolve.outputs.image-tag }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           sparse-checkout: |
             .vig-os
@@ -88,7 +88,7 @@ jobs:
 
     steps:
       - name: Checkout and fetch
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           fetch-depth: 0
 
@@ -137,7 +137,7 @@ jobs:
     env:
       SYNC_BRANCH: chore/sync-main-to-dev-${{ github.run_number }}-${{ github.run_attempt }}
     permissions:
-      contents: write
+      contents: read
       pull-requests: write
       issues: write
       packages: read
@@ -151,7 +151,7 @@ jobs:
           private-key: ${{ secrets.COMMIT_APP_PRIVATE_KEY }}
 
       - name: Checkout repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           fetch-depth: 0
           token: ${{ steps.commit-app-token.outputs.token }}
@@ -204,13 +204,14 @@ jobs:
         if: steps.recheck.outputs.up_to_date != 'true'
         env:
           GH_TOKEN: ${{ steps.commit-app-token.outputs.token }}
+          RELEASE_GH_TOKEN: ${{ steps.release-app-token.outputs.token }}
         run: |
           set -euo pipefail
           REFS=$(retry --retries 3 --backoff 5 --max-backoff 30 -- \
             gh api --paginate "repos/${{ github.repository }}/git/matching-refs/heads/chore/sync-main-to-dev-" \
             --jq '.[].ref' | sed 's|refs/heads/||') || true
           for branch in ${REFS}; do
-            HAS_PR=$(GH_TOKEN="${{ steps.release-app-token.outputs.token }}" retry --retries 3 --backoff 5 --max-backoff 30 -- \
+            HAS_PR=$(GH_TOKEN="${RELEASE_GH_TOKEN}" retry --retries 3 --backoff 5 --max-backoff 30 -- \
               gh pr list --base dev --head "${branch}" \
               --state open --json number --jq 'length')
             if [ "${HAS_PR}" = "0" ]; then

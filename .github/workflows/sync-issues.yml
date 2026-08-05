@@ -54,8 +54,9 @@ jobs:
       image-tag: ${{ steps.resolve.outputs.image-tag }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
+          persist-credentials: false
           sparse-checkout: |
             .vig-os
             .github/actions/resolve-toolchain
@@ -82,10 +83,10 @@ jobs:
       group: sync-issues-${{ github.repository }}
       cancel-in-progress: true
     permissions:
-      contents: write
+      contents: read
       issues: read
       pull-requests: read
-      actions: write  # Required for cache deletion
+      actions: write  # Required for cache deletion (gh api DELETE on github.token)
       packages: read
 
     steps:
@@ -97,7 +98,7 @@ jobs:
           private-key: ${{ secrets.COMMIT_APP_PRIVATE_KEY }}
 
       - name: Checkout repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           ref: ${{ github.event.inputs.target-branch || 'dev' }}
           persist-credentials: false
@@ -123,6 +124,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # This step runs `if: always()`, so it can fire after the job died
+          # before toolchain setup — before the `retry` shim exists. Without a
+          # fallback, `retry` in the CACHE_ID assignment below would emit
+          # "command not found" and `head` would still exit 0, silently masking
+          # the failure. Define a one-shot fallback (no retries) so a healthy
+          # run still uses the real shim and an early-failure run degrades
+          # gracefully. This cleanup is best-effort (continue-on-error).
+          command -v retry >/dev/null 2>&1 || retry() { while [ "$#" -gt 0 ] && [ "$1" != "--" ]; do shift; done; shift; "$@"; }
           echo "Attempting to delete old cache to prevent save collisions..."
           # Wait a moment to ensure any previous cache saves have completed
           sleep 2
@@ -163,7 +172,7 @@ jobs:
 
       - name: Sync Issues and PRs
         id: sync
-        uses: vig-os/sync-issues-action@f530c0f256e651cbbc36c29674ecee3c854b4f80  # v0.3.0
+        uses: vig-os/sync-issues-action@285a0af876bac99a0e914a64a1cb925dd913f38a  # v0.4.0
         with:
           app-id: ${{ secrets.COMMIT_APP_ID }}
           app-private-key: ${{ secrets.COMMIT_APP_PRIVATE_KEY }}
@@ -177,7 +186,7 @@ jobs:
       - name: Commit and push changes via API
         id: commit
         if: steps.sync.outputs.modified-files != ''
-        uses: vig-os/commit-action@96ba909f2151cef35550b032cff210de671c9c9e  # v0.3.0
+        uses: vig-os/commit-action@3a0588ec060d9647bf406e064cf9e6192a431864  # v0.3.1
         env:
           # Use App token so push can bypass branch protection when App is in bypass list
           GH_TOKEN: ${{ steps.generate-token.outputs.token }}

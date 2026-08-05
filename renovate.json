@@ -3,5 +3,14 @@
   "extends": [
     "github>vig-os/commit-action//.github/renovate-default"
   ],
-  "enabledManagers": ["github-actions", "pep621", "npm"]
+  "enabledManagers": ["github-actions", "pep621", "npm"],
+  "packageRules": [
+    {
+      "description": "Hold the typescript major (v7, the native compiler port): our toolchain peers exclude it — ts-jest@29 pins typescript '>=4.3 <7' and typescript-eslint@8 pins '>=4.8.4 <6.1.0'. Remove this rule (and bump all three together) once ts-jest and typescript-eslint ship TS 7-compatible releases. Kept here (consumer-owned, upgrade-durable) rather than in the managed renovate-default.json. Refs #101.",
+      "matchManagers": ["npm"],
+      "matchPackageNames": ["typescript"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    }
+  ]
 }

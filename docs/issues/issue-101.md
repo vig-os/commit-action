@@ -1,19 +1,19 @@
 ---
 type: issue
-state: open
+state: closed
 created: 2026-07-16T16:50:28Z
-updated: 2026-07-16T16:50:28Z
+updated: 2026-07-16T17:32:16Z
 author: c-vigo
 author_url: https://github.com/c-vigo
 url: https://github.com/vig-os/commit-action/issues/101
-comments: 0
+comments: 1
 labels: none
 assignees: none
 milestone: none
 projects: none
 parent: none
 children: none
-synced: 2026-07-16T17:18:51.025Z
+synced: 2026-07-17T04:59:06.709Z
 ---
 
 # [Issue 101]: [chore: hold typescript major (v7) in Renovate until toolchain supports it](https://github.com/vig-os/commit-action/issues/101)
@@ -26,3 +26,11 @@ TypeScript 7 (the native/Go compiler port) is not yet supported by our test/lint
 Renovate PR #99 (`typescript ^5.3.2 → ^7.0.0`) failed CI because of this (plus an out-of-sync lockfile breaking `npm ci`). #99 is closed.
 
 Add a Renovate `packageRules` entry to hold the `typescript` major until both peers ship TS 7-compatible releases, then bump all three together in a single coordinated PR.
+---
+
+# [Comment #1]() by [c-vigo]()
+
+_Posted on July 16, 2026 at 05:32 PM_
+
+Closed by #102 
+
