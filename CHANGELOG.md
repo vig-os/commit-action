@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Update `tsx` from `4.23.1` to `4.23.7`
   - Update `typescript-eslint` from `8.65.0` to `8.66.0`
 - **Renovate: update `globals` from `17.7.0` to `17.8.0`** ([#119](https://github.com/vig-os/commit-action/pull/119))
-- **Renovate: lock file maintenance** ([#109](https://github.com/vig-os/commit-action/pull/109), [#116](https://github.com/vig-os/commit-action/pull/116), [#120](https://github.com/vig-os/commit-action/pull/120)) — three scheduled refreshes of `package-lock.json` to the latest resolvable versions. Transitive dev-dependency movement only: `package.json` is untouched by all three, and every direct dependency range is unchanged.
+- **Renovate: lock file maintenance** ([#109](https://github.com/vig-os/commit-action/pull/109), [#116](https://github.com/vig-os/commit-action/pull/116), [#120](https://github.com/vig-os/commit-action/pull/120), [#129](https://github.com/vig-os/commit-action/pull/129)) — four scheduled refreshes of `package-lock.json` to the latest resolvable versions. `package.json` is untouched by all four and every direct dependency range is unchanged, but the movement is **not** dev-dependency-only: `undici` (`6.27.0` → `6.28.0`) and `@octokit/request` / `@octokit/core` are transitive **runtime** dependencies of `@actions/core` and `@actions/github`, so they ship inside the bundled `dist/index.js`. See the bundle rebuild under _Fixed_ below.
 - **Renovate dependency update** ([#114](https://github.com/vig-os/commit-action/pull/114))
   - Update `eslint` from `10.7.0` to `10.8.0`
   - Update `prettier` from `3.9.5` to `3.9.6`
@@ -60,6 +60,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 ### Fixed
+
+- **The committed action bundle is rebuilt and back in sync with its lock file** ([#130](https://github.com/vig-os/commit-action/issues/130)). `dist/index.js` — the artifact `action.yml` actually runs, and therefore the only thing consumers of a released tag execute — still inlined dependency versions the lock file had moved past. Nothing rebundled after the lock-file maintenance PRs, and `dist-check.yml` triggers only on pull requests to `release/**` and `main` while every dependency PR targets `dev`, so the drift accumulated unseen. The refreshed bundle carries `undici` `6.28.0` (header-value validation before coercion, rejecting values produced by a crafted `toString`/`Symbol.toPrimitive` and an invalid `content-type` derived from a blob body, plus `Content-Length`-mismatch detection on partial responses) and `@octokit/request` `10.0.13` / `@octokit/core` `7.0.7`.
 
 ### Security
 
