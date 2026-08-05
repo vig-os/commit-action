@@ -11,6 +11,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.3.2] - TBD
+
+### Changed
+
 - **Renovate dependency update** ([#128](https://github.com/vig-os/commit-action/pull/128))
   - Update `globals` from `17.8.0` to `17.9.0`
   - Update `tsx` from `4.23.1` to `4.23.7`
@@ -56,16 +68,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - First upgrade across the 1.3.0 gitignore migration (vig-os/devkit#1145): the consumer-owned `.gitignore.project` no longer accretes scaffold-committed filenames or cross-language junk, and scaffold-committed files stay tracked.
   - Managed CI gains a `dependency-review` gate and the release/promote workflows pick up mergeability and floating-tag-creation hardening; the TypeScript-major Renovate hold (Refs #101) moves from the managed `renovate-default.json` into the consumer-owned `renovate.json` so it survives future re-scaffolds.
 
-### Deprecated
-
-### Removed
-
 ### Fixed
 
 - **The committed action bundle is rebuilt and back in sync with its lock file** ([#130](https://github.com/vig-os/commit-action/issues/130)). `dist/index.js` — the artifact `action.yml` actually runs, and therefore the only thing consumers of a released tag execute — still inlined dependency versions the lock file had moved past. Nothing rebundled after the lock-file maintenance PRs, and `dist-check.yml` triggers only on pull requests to `release/**` and `main` while every dependency PR targets `dev`, so the drift accumulated unseen. The refreshed bundle carries `undici` `6.28.0` (header-value validation before coercion, rejecting values produced by a crafted `toString`/`Symbol.toPrimitive` and an invalid `content-type` derived from a blob body, plus `Content-Length`-mismatch detection on partial responses) and `@octokit/request` `10.0.13` / `@octokit/core` `7.0.7`.
 - **`dist/` tracks only the shipped artifact again** ([#134](https://github.com/vig-os/commit-action/issues/134)). The TypeScript declaration byproducts under `dist/src/` have been gitignored since [#70](https://github.com/vig-os/commit-action/issues/70), but the v0.3.0 finalize commit re-added them — the vig-os/devkit#1159 bug, in which the release step walked a bare `dist` directory path and force-added every file it found without consulting `.gitignore`. devkit fixed that upstream, but the tracked residue survived here. Each `.d.ts.map` embeds an absolute `sourceRoot` pointing at the CI runner's checkout path, so a rebuild anywhere else reported six modified files and the "deterministic across checkout locations" property that `dist-check.yml` and `release-extension.yml` both rely on held only by coincidence of build location. `git rm -r --cached dist/src` clears it: `dist/index.js` and `dist/package.json` are once again the only tracked paths, `just bundle` leaves a clean tree on any machine, and the finalize commit no longer writes runner paths into each release tag.
-
-### Security
 
 ## [v0.3.1](https://github.com/vig-os/commit-action/releases/tag/v0.3.1) - 2026-07-16
 
