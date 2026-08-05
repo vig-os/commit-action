@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **Renovate: update `globals` from `17.7.0` to `17.8.0`** ([#119](https://github.com/vig-os/commit-action/pull/119))
+- **Renovate: lock file maintenance** ([#109](https://github.com/vig-os/commit-action/pull/109), [#116](https://github.com/vig-os/commit-action/pull/116), [#120](https://github.com/vig-os/commit-action/pull/120)) — three scheduled refreshes of `package-lock.json` to the latest resolvable versions. Transitive dev-dependency movement only: `package.json` is untouched by all three, and every direct dependency range is unchanged.
 - **Renovate dependency update** ([#114](https://github.com/vig-os/commit-action/pull/114))
   - Update `eslint` from `10.7.0` to `10.8.0`
   - Update `prettier` from `3.9.5` to `3.9.6`
@@ -22,8 +23,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Update `actions/checkout` from `v7.0.0` to `v7.0.1`
   - Update `ossf/scorecard-action` from `v2.4.3` to `v2.4.4`
 - **Renovate: update `github/codeql-action` from `7188fc3` to `e4fba86`** ([#112](https://github.com/vig-os/commit-action/pull/112))
+- **Adopt vigOS devkit 1.6.0** ([#121](https://github.com/vig-os/commit-action/issues/121), [#124](https://github.com/vig-os/commit-action/pull/124))
+  - This lane jumps **1.4.2 → 1.6.0 directly**. devkit 1.5.0 was never finalized on consumers, so the in-flight 1.5.0-rc2 adoption ([#122](https://github.com/vig-os/commit-action/pull/122)) was closed as stale and superseded rather than merged; the features it carried arrive here instead. `.vig-os` `DEVKIT_VERSION=1.6.0` with `flake.lock` re-locked to suit. The `vigos` flake input stays on the scaffold's floating default (no `?ref`, as of 1.4.0 final), so the dev-shell toolchain tracks devkit's default branch rather than the pinned scaffold version; the dev shell reports the gap as a vig-os/devkit#1263 skew warning on load.
+  - New `devkit-upgrade.yml`, a self-polling upgrade workflow on App-only auth (vig-os/devkit#1296): it watches devkit's latest release and opens the adoption PR when this repo's `DEVKIT_VERSION` falls behind.
+  - New scaffold-drift CI gate (vig-os/devkit#1295) — CI fails when a managed file is hand-edited or `DEVKIT_VERSION` is bumped without a matching re-scaffold.
+  - New `.vig-os` keys, **all left empty (defaults), so no behavior change here**: `DEVKIT_FEATURES_DISABLED` and `DEVKIT_REFS_POLICY` (vig-os/devkit#1282, #1284), plus `DEVKIT_AUTO_UPGRADE`, `DEVKIT_UPGRADE_EXCLUDE`, `DEVKIT_DRIFT_CHECK`.
+  - The managed Renovate preset now excludes devkit-managed workflows and actions (vig-os/devkit#1332), so scaffold-pinned action SHAs move by re-scaffold instead of by Renovate PR.
+  - `release-publish.yml` gains tombstone (`GH013`) detection (vig-os/devkit#1319).
+  - The scaffold re-seeds a `.github/CODEOWNERS` template. It contains **no active rule** (every line is a comment), so it does not reinstate the code-owner review requirement deliberately removed in [#83](https://github.com/vig-os/commit-action/issues/83).
+- **Adopt vigOS devkit 1.4.2** ([#117](https://github.com/vig-os/commit-action/issues/117))
+  - Security-register patch train: unbound CVE exceptions and openssl block re-verification.
+  - First consumer to exercise the pin-lockstep fix (vig-os/devkit#1263) — the upgrade advanced the `vigos` `flake.lock` input `d16541f5` (1.4.0) → `b884b22b` (1.4.2) alongside the `.vig-os` pin, clearing the skew in which the dev-shell toolchain lagged the scaffold it was supposed to match.
+- **Adopt vigOS devkit 1.4.1** ([#110](https://github.com/vig-os/commit-action/issues/110))
+  - Re-scaffold from 1.4.0, validated through the full RC train (rc2 → rc3 → rc4 → final), each bump re-scaffolded with the RC image and CI-green in this lane.
+  - The final scaffold diff vs 1.4.0 is pin-only plus two narrow additions: a `.github/label-taxonomy.toml` header (vig-os/devkit#1254) and the `DEVKIT_SYNC_TARGET` / `DEVKIT_SYNC_SCHEDULE` knobs (vig-os/devkit#1228, both left empty). All other managed files render unchanged.
 - **Adopt vigOS devkit 1.4.0** ([#107](https://github.com/vig-os/commit-action/issues/107))
-  - Re-scaffold from devkit 1.3.1 to 1.4.0 in direnv mode; pins move in lockstep (`.vig-os` `DEVKIT_VERSION`, `flake.nix` `?ref`, `flake.lock` re-locked to the matching revision). Delivery mode, tag prefix (`v`), and floating tags (`major,minor`) are preserved from `.vig-os`.
+  - Re-scaffold from devkit 1.3.1 to 1.4.0 in direnv mode; `.vig-os` `DEVKIT_VERSION` and `flake.lock` move in lockstep. Delivery mode, tag prefix (`v`), and floating tags (`major,minor`) are preserved from `.vig-os`.
+  - The `vigos` flake input was pinned to each candidate during RC validation (`?ref=1.4.0-rc2` → … → `?ref=1.4.0-rc6`) and deliberately returned to the scaffold's floating default at 1.4.0 final (`86a14d6`), those RC pins having been validation-only.
   - The devkit-managed workflows are zizmor-audited (vig-os/devkit#1182): `persist-credentials: false` is set on the read-only checkouts (CI, `codeql.yml`, `renovate-changelog-build.yml`, `sync-issues.yml`), the `sync-main-to-dev` cleanup step moves its release-app token into `env:`, and a devkit-owned `zizmor.yml` baseline ships so this repo maintains no baseline of its own.
   - New optional `.vig-os` key `DEVKIT_CI_RUNNER` (vig-os/devkit#1173): `resolve-toolchain` emits a `runner-json` output and the managed `ci.yml` toolchain jobs route `runs-on` through it; absent (default) keeps the hosted `ubuntu-24.04` runner.
   - The direnv CI preamble now forwards the flake `shellHook` environment to CI (vig-os/devkit#1180), and the base `justfile` ships a `with-native-libs` helper for `uvx` tools with native wheels (vig-os/devkit#1181).
