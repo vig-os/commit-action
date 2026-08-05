@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Renovate: update `github/codeql-action` from `d1ba80a` to `5595cca`** ([#127](https://github.com/vig-os/commit-action/pull/127))
 - **Renovate: update `globals` from `17.7.0` to `17.8.0`** ([#119](https://github.com/vig-os/commit-action/pull/119))
 - **Renovate: lock file maintenance** ([#109](https://github.com/vig-os/commit-action/pull/109), [#116](https://github.com/vig-os/commit-action/pull/116), [#120](https://github.com/vig-os/commit-action/pull/120)) — three scheduled refreshes of `package-lock.json` to the latest resolvable versions. Transitive dev-dependency movement only: `package.json` is untouched by all three, and every direct dependency range is unchanged.
 - **Renovate dependency update** ([#114](https://github.com/vig-os/commit-action/pull/114))
