@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Renovate dependency update** ([#138](https://github.com/vig-os/commit-action/pull/138))
+  - Update `eslint` from `10.8.0` to `10.8.1`
+  - Update `tsx` from `4.23.7` to `4.23.11`
+
 ### Deprecated
 
 ### Removed
