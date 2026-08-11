@@ -2,7 +2,7 @@
 type: issue
 state: open
 created: 2026-07-14T08:32:46Z
-updated: 2026-08-10T01:28:12Z
+updated: 2026-08-10T17:37:35Z
 author: renovate[bot]
 author_url: https://github.com/renovate[bot]
 url: https://github.com/vig-os/commit-action/issues/42
@@ -13,20 +13,20 @@ milestone: none
 projects: none
 parent: none
 children: none
-synced: 2026-08-10T03:47:12.410Z
+synced: 2026-08-11T03:29:51.643Z
 ---
 
 # [Issue 42]: [Dependency Dashboard](https://github.com/vig-os/commit-action/issues/42)
 
 This issue lists Renovate updates and detected dependencies. Read the [Dependency Dashboard](https://docs.renovatebot.com/key-concepts/dashboard/) docs to learn more.<br>[View this repository on the Mend.io Web Portal](https://developer.mend.io/github/vig-os/commit-action).
 
-## Open
+## Awaiting Schedule
 
-The following updates have all been created. To force a retry/rebase of any, click on a checkbox below.
+The following updates are awaiting their schedule. To get an update now, click on a checkbox below.
 
- - [ ] <!-- rebase-branch=renovate/npm-dev-dependencies -->[build(npm): update npm dev dependencies](../pull/138) (`eslint`, `tsx`)
- - [ ] <!-- rebase-branch=renovate/lock-file-maintenance -->[build(npm): lock file maintenance](../pull/139)
- - [ ] <!-- rebase-all-open-prs -->**Click on this checkbox to rebase all open PRs at once**
+ - [ ] <!-- unschedule-branch=renovate/npm-dev-dependencies -->build(npm): update npm dev dependencies (`tsx`, `typescript-eslint`)
+ - [ ] <!-- unschedule-branch=renovate/lock-file-maintenance -->build(npm): lock file maintenance
+ - [ ] <!-- create-all-awaiting-schedule-prs -->🔐 **Create all awaiting schedule PRs at once** 🔐
 
 ## Detected Dependencies
 
@@ -165,14 +165,14 @@ The following updates have all been created. To force a retry/rebase of any, cli
  - `@types/jest ^30.0.0`
  - `@types/node ^24.0.0`
  - `@vercel/ncc ^0.44.1`
- - `eslint ^10.7.0` → [Updates: `^10.7.0`]
+ - `eslint ^10.7.0`
  - `globals ^17.7.0`
  - `jest ^30.4.2`
  - `prettier ^3.1.0`
  - `ts-jest ^29.1.1`
  - `tsx ^4.7.0` → [Updates: `^4.7.0`]
  - `typescript ^5.3.2` → [Updates: `^7.0.0`]
- - `typescript-eslint ^8.64.0`
+ - `typescript-eslint ^8.64.0` → [Updates: `^8.64.0`]
 
 </details>
 
