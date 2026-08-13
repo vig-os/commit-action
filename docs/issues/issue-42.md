@@ -2,7 +2,7 @@
 type: issue
 state: open
 created: 2026-07-14T08:32:46Z
-updated: 2026-08-10T17:37:35Z
+updated: 2026-08-12T06:09:06Z
 author: renovate[bot]
 author_url: https://github.com/renovate[bot]
 url: https://github.com/vig-os/commit-action/issues/42
@@ -13,7 +13,7 @@ milestone: none
 projects: none
 parent: none
 children: none
-synced: 2026-08-11T03:29:51.643Z
+synced: 2026-08-13T04:05:01.063Z
 ---
 
 # [Issue 42]: [Dependency Dashboard](https://github.com/vig-os/commit-action/issues/42)
@@ -24,7 +24,7 @@ This issue lists Renovate updates and detected dependencies. Read the [Dependenc
 
 The following updates are awaiting their schedule. To get an update now, click on a checkbox below.
 
- - [ ] <!-- unschedule-branch=renovate/npm-dev-dependencies -->build(npm): update npm dev dependencies (`tsx`, `typescript-eslint`)
+ - [ ] <!-- unschedule-branch=renovate/npm-dev-dependencies -->build(npm): update npm dev dependencies (`globals`, `tsx`, `typescript-eslint`)
  - [ ] <!-- unschedule-branch=renovate/lock-file-maintenance -->build(npm): lock file maintenance
  - [ ] <!-- create-all-awaiting-schedule-prs -->🔐 **Create all awaiting schedule PRs at once** 🔐
 
@@ -166,7 +166,7 @@ The following updates are awaiting their schedule. To get an update now, click o
  - `@types/node ^24.0.0`
  - `@vercel/ncc ^0.44.1`
  - `eslint ^10.7.0`
- - `globals ^17.7.0`
+ - `globals ^17.7.0` → [Updates: `^17.7.0`]
  - `jest ^30.4.2`
  - `prettier ^3.1.0`
  - `ts-jest ^29.1.1`
