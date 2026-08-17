@@ -18,7 +18,7 @@ The downstream template uses a split release architecture:
 
 All files are deployed from `assets/workspace/` by `init-workspace.sh`.
 
-On failure, the orchestrator runs a single consolidated rollback that resets the release branch (best-effort), does **not** delete tags (forward-fix policy), and opens a failure issue with forward-fix guidance.
+On failure, the orchestrator runs a single consolidated rollback that reverts only the finalize commit(s) this run wrote — it no-ops when finalize never ran and refuses to touch a branch that moved during the run ([#1462](https://github.com/vig-os/devkit/issues/1462)) — does **not** delete tags (forward-fix policy), and opens a failure issue with forward-fix guidance.
 
 ## Release Modes
 
@@ -29,24 +29,57 @@ On failure, the orchestrator runs a single consolidated rollback that resets the
 
 Candidate mode keeps release branch content unchanged (no CHANGELOG date finalization). Final mode performs changelog finalization before publish.
 
+### Bot changelog entries (release-time synthesis)
+
+Changelog entries for bot PRs (Renovate dependency updates, lock file
+maintenance, devkit adoption PRs) are **synthesized at release time**, not
+committed into the bot PR branches ([vig-os/devkit#1423](https://github.com/vig-os/devkit/issues/1423)):
+`synthesize-bot-changelog` enumerates the merged bot PRs since the last stable
+release tag and regenerates a `#### Dependencies` block under `### Changed`,
+coalesced to the **net delta per dependency** (every contributing PR is cited).
+It runs twice — in `prepare-release.yml` before the changelog freeze, and in
+`release-core.yml` (final kind only) before the date stamp — so a bot PR merged
+into the release branch mid-train is picked up at finalize. Candidates stay
+changelog-neutral. Preview the pending block anytime with
+`just changelog-preview` (read-only). Bot PR branches never touch
+`CHANGELOG.md`, so Renovate's own conflict-driven rebase works unassisted.
+
 ## Immutable releases, tag rulesets, and forward-fix policy (downstream)
 
 - **Candidate (`X.Y.Z-rcN`)**: By default only the git tag is created. With **`create-release: true`**, `release-publish.yml` creates a **draft** GitHub **pre-release** (`gh release create --draft --prerelease`). Promote-time validation uses `gh api .../releases/tags/<tag>` and inspects `.draft` to ensure the expected draft pre-release exists; see [Cross-repo gate](https://github.com/vig-os/devkit/blob/main/docs/CROSS_REPO_RELEASE_GATE.md) for upstream enforcement status. With **immutable releases** enabled, **publishing** a pre-release locks the **linked** tag and assets (see [upstream policy](https://github.com/vig-os/devkit/blob/main/docs/RELEASE_CYCLE.md#immutable-releases-tag-rulesets-and-forward-fix-policy)); iterate with a **new** RC tag.
 - **Final (`X.Y.Z`)**: Automation creates a **draft** GitHub Release; **publishing** it (UI or `promote-release.yml`) applies immutable-release lock-in for the linked tag and assets when that setting is enabled. Enable **immutable releases** and **tag rulesets** on each consumer repository (and org policy) as needed; see [Preventing changes to your releases](https://docs.github.com/en/code-security/supply-chain-security/understanding-your-software-supply-chain/preventing-changes-to-your-releases).
-- **Rollback**: The orchestrator resets the release branch and does **not** delete tags (forward-fix policy); recover with a new RC or a careful final retry per workflow logs.
+- **Rollback**: The orchestrator reverts only the finalize commit(s) the failed run wrote (never a wholesale branch reset; it refuses when the branch moved mid-run, [#1462](https://github.com/vig-os/devkit/issues/1462)) and does **not** delete tags (forward-fix policy); recover with a new RC or a careful final retry per workflow logs.
 
 ## Promote release (final)
 
 After final `release.yml` has pushed tag `X.Y.Z` and created a **draft** GitHub Release, run **`promote-release.yml`** (or `just promote-release X.Y.Z` from the devcontainer; dispatches on `release/X.Y.Z` by default) to:
 
-1. **Validate** — semver, draft release for `X.Y.Z`, release PR not draft / approved / CI green
+1. **Validate** — semver, draft release for `X.Y.Z`, release PR not draft / approved (when the base branch requires reviews) / CI green
 2. **Promote** — `gh release edit --draft=false`
 3. **Merge** — merge `release/X.Y.Z` → `main` (triggers `sync-main-to-dev` under the gitflow model — see [Workflow models](#workflow-models))
 4. **Cleanup** (best-effort, does not fail the workflow) — delete remote git tags matching `${VERSION}-rc*` that have **no** GitHub Release
 
+**Approve the release PR immediately before dispatching promote** ([#1504](https://github.com/vig-os/devkit/issues/1504)) — this is the release cycle's single human approval; `release.yml` collects none. It happens here, after finalize, because the final `release.yml` run's `finalize` job pushes to `release/X.Y.Z` (CHANGELOG date stamp plus the `sync-issues` commit), and on any repository with stale-review dismissal enabled a push dismisses existing approvals — so an earlier approval could never survive to promote, and any later push to the release branch dismisses this one again:
+
+```bash
+# Current state (REVIEW_REQUIRED until approved)
+gh pr view <PR_NUMBER> --json reviewDecision
+
+# Approve (must be a human account other than the PR author)
+gh -R <owner>/<repo> pr review <PR_NUMBER> --approve
+```
+
+On a repository whose `main` ruleset requires **no** approving reviews (solo projects), promote's gates skip the approval assertion — explicitly, logged — and this step disappears ([#1506](https://github.com/vig-os/devkit/issues/1506)). Full reasoning and the upstream runbook: [`docs/RELEASE_CYCLE.md`](https://github.com/vig-os/devkit/blob/main/docs/RELEASE_CYCLE.md#phase-5-post-release-cleanup).
+
 **Upstream (`vig-os/devcontainer`) only:** Root `promote-release.yml` also prunes GHCR RC package versions via the org Packages API using **`GITHUB_TOKEN`** with **repo Admin** on the `devcontainer` package (one-time **Manage Actions access** grant). See [GitHub App Configuration](https://github.com/vig-os/devkit/blob/main/docs/RELEASE_CYCLE.md#github-app-configuration) and [Registry and cleanup tokens](https://github.com/vig-os/devkit/blob/main/docs/RELEASE_CYCLE.md#registry-and-cleanup-tokens-upstream) in `docs/RELEASE_CYCLE.md`.
 
 This template does **not** implement upstream-only steps (GHCR `:latest`, cosign, cross-repo smoke-test gate). Projects that need registry or deploy promotion after merge should run separate automation or extend their `release-extension.yml` / own workflows; see [Extension Hook](#extension-hook).
+
+## Abandon release (draft-only rejection path)
+
+To **reject** a finalized-but-unpublished release instead of promoting it, run **`abandon-release.yml`** (or `just abandon-release X.Y.Z`; dispatches on `dev` by default — the release branch is about to be deleted, so it cannot be the dispatch ref; under the trunk model pass the ref explicitly: `just abandon-release X.Y.Z main`). As the Release App (tag-ruleset bypass, the same machinery as promote's RC prune) it deletes the **draft** GitHub Release, deletes the `<DEVKIT_TAG_PREFIX>X.Y.Z` tag, closes the release PR with an audit comment, and deletes `release/X.Y.Z`. The version number remains available for a re-cut; RC artifacts are **not** pruned (a re-cut of the same version reclaims them at its promote). Every step is idempotent, so a partially failed run can simply be re-dispatched.
+
+This is the explicit, guarded exception to the no-tag-deletion rollback policy above: it is safe **only while the Release is a draft**, and the workflow hard-refuses a published release ([#1511](https://github.com/vig-os/devkit/issues/1511)). Publishing tombstones the tag name permanently — after promote, the only path is fixing forward with the next version.
 
 ## Workflow models
 
@@ -57,8 +90,19 @@ is still cut, driven through the RC train, finalized, and merged. The models
 differ only in the base the release branch forks from and merges back to, which
 is settled entirely at scaffold time (an anchored `dev -> main` render — see
 [`docs/rfcs/ADR-workflow-model.md`](https://github.com/vig-os/devkit/blob/main/docs/rfcs/ADR-workflow-model.md)).
-One release step is model-dependent:
+Two release steps are model-dependent:
 
+- **The changelog freeze targets `dev` under `gitflow` and `release/X.Y.Z` under
+  `trunk`** ([#1479](https://github.com/vig-os/devkit/issues/1479)).
+  `prepare-release.yml` cuts `release/X.Y.Z` from the base *before* it freezes,
+  then commits the freeze to the model's freeze target and fast-forwards the
+  release branch onto it (a no-op under `trunk`, where the freeze already landed
+  there). Under `trunk` the base branch is also the release PR's base, so
+  freezing onto it would leave head and base at the same commit — GitHub then
+  refuses to open the PR — and would push straight to the trunk. Consequence for
+  a trunk consumer: **the Commit App needs no bypass on the `main` ruleset**; it
+  only ever writes to `release/*`. `main` receives the frozen changelog when the
+  release PR merges at promote time.
 - **`sync-main-to-dev.yml` runs only under `gitflow`.** The gitflow model keeps a
   long-lived `dev` integration branch, so a push to `main` (including a release
   merge) opens a PR syncing `main` back into `dev`. The `trunk` model has no
@@ -93,7 +137,7 @@ release/automation set provisions its toolchain per `DEVKIT_MODE`
 
 - Each `workflow_dispatch`/event-triggered workflow (`release.yml`,
   `prepare-release.yml`, `promote-release.yml`, `sync-issues.yml`,
-  `renovate-changelog-build.yml`, `sync-main-to-dev.yml`) runs a leading
+  `sync-main-to-dev.yml`) runs a leading
   **`resolve-toolchain`** job that reads `.vig-os` and emits `mode`, `image`, and
   `image-tag`. The `image` is the devcontainer image in the container modes
   (`devcontainer`/`both`) and an **explicit empty string** in the host modes
@@ -113,11 +157,11 @@ This is a toolchain-provisioning change only — the release **choreography** (s
 logic, ordering, `workflow_call` inputs/outputs, and rollback semantics) is
 unchanged across all modes. Host-mode runners already provide `git`, `gh`, and
 `jq`; `just`, `uv`, `prek`, `retry`, and the `vig-utils` release scripts
-(`prepare-changelog`, `renovate-changelog-pr`) come from the composite, so the
+(`prepare-changelog`, `synthesize-bot-changelog`) come from the composite, so the
 choreography's bare `run:` invocations are identical in every mode. In `bare`
 mode the composite pins `vig-utils` to the `.vig-os` `DEVKIT_VERSION`
-(`renovate-changelog-pr` in `renovate-changelog-build.yml`, `prepare-changelog`
-in `prepare-release.yml` / `release-core.yml`); see
+(`synthesize-bot-changelog` and `prepare-changelog` in `prepare-release.yml` /
+`release-core.yml`); see
 [`docs/MIGRATION.md`](https://github.com/vig-os/devkit/blob/main/docs/MIGRATION.md#bare-mode-vig-utils-release-console-scripts).
 
 ## Required App Secrets
@@ -138,7 +182,7 @@ Template behavior relies on explicit app-token generation for release operations
 
 ## Input Naming Convention
 
-All `workflow_call` inputs use underscores (e.g. `release_kind`, `dry_run`, `git_user_name`). The orchestrator `release.yml` translates its own `workflow_dispatch` hyphenated inputs at each call site.
+All `workflow_call` inputs use underscores (e.g. `release_kind`, `dry_run`, `tag_prefix`). The orchestrator `release.yml` translates its own `workflow_dispatch` hyphenated inputs at each call site.
 
 ## Extension Hook
 
@@ -180,9 +224,8 @@ Contract inputs:
 
 - `version` — the release version being prepared (`X.Y.Z`)
 - `release_branch` — the release branch just created (`release/X.Y.Z`)
-- `branch_sha` — the post-freeze head SHA the release branch was created from
+- `branch_sha` — the post-freeze head SHA of the release branch (the changelog-freeze commit)
 - `dry_run` — validate without making changes (extensions must honor it)
-- `git_user_name`, `git_user_email` — the git identity `prepare-release.yml` carries
 
 `prepare-release.yml` calls the hook with `secrets: inherit`, so an extension can mint the `COMMIT_APP` token to push to the write-protected release branch — the same bypass and identity the changelog-freeze commit already uses.
 
@@ -215,12 +258,6 @@ on:
         required: false
         default: false
         type: boolean
-      git_user_name:
-        required: false
-        type: string
-      git_user_email:
-        required: false
-        type: string
 
 permissions:
   contents: read
@@ -331,3 +368,10 @@ jobs:
 Release workflow logic is centralized in shipped local reusable workflows (`release-core.yml`, `release-publish.yml`) while extension logic remains project-owned (`release-extension.yml`).
 
 This reduces drift in release safety checks while preserving downstream customization boundaries.
+
+Two independent staleness axes are reported in CI ([#1497](https://github.com/vig-os/devkit/issues/1497)):
+
+- **Scaffold drift** (`scaffold-drift` job, gate): the working tree diverges from what the *pinned* `DEVKIT_VERSION` would scaffold. Opt out with `DEVKIT_DRIFT_CHECK=false`.
+- **Pin staleness** (`devkit-staleness` job, warn-only): the pin itself is behind the latest devkit release — invisible to the drift gate by construction, since it compares the pin against itself. The report is a `::warning` annotation plus a step-summary block; it never fails the build and is not silenced by the drift opt-out.
+
+The flake-input axis is reported by the upgrade lane itself: `install.sh --force` prints one `flake-bump:` line per run — advanced (any input name at the floating `github:vig-os/devkit` URL), or skipped with the reason (a pinned ref, in either `?ref=X` or `/X` form, is never auto-bumped) — and `devkit-upgrade.yml` carries that line into the adoption PR body.

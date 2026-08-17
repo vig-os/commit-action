@@ -1,5 +1,45 @@
 {
   "nodes": {
+    "crane": {
+      "locked": {
+        "lastModified": 1785782307,
+        "narHash": "sha256-MPaRdVkf6zZP5fCPxYCi8Dr4pZzgmXzg8T9nVEbp3Mw=",
+        "owner": "ipetkov",
+        "repo": "crane",
+        "rev": "2c71e194474d13de031d729b729c968ddbe3507f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "ipetkov",
+        "repo": "crane",
+        "type": "github"
+      }
+    },
+    "fenix": {
+      "inputs": {
+        "nixpkgs": [
+          "vigos",
+          "nixpkgs"
+        ],
+        "rust-analyzer-src": [
+          "vigos",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1786432497,
+        "narHash": "sha256-iunnvo2ZqbFOwp/LXL3vtlbaG+45FuiHk+YKpbSoAec=",
+        "owner": "nix-community",
+        "repo": "fenix",
+        "rev": "45d045a58ed69993eb1d349a86def638fea93a9f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-community",
+        "repo": "fenix",
+        "type": "github"
+      }
+    },
     "flake-compat": {
       "flake": false,
       "locked": {
@@ -119,11 +159,11 @@
     },
     "nixpkgs-unstable": {
       "locked": {
-        "lastModified": 1785602060,
-        "narHash": "sha256-z7D96eESRM4CPV/XtwpwFn8IDdfLAmxz6lVWrGYXvR4=",
+        "lastModified": 1786098110,
+        "narHash": "sha256-shi1tjDhCGGd0kIgVPNY03V8NBWSTzhMSFDb7IqSoec=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "a5cbcfe954791221bfffe2307f7d1a1bf61a871e",
+        "rev": "afb4584a80bbf779ce0f691509ff902d188c2b3d",
         "type": "github"
       },
       "original": {
@@ -214,6 +254,8 @@
     },
     "vigos": {
       "inputs": {
+        "crane": "crane",
+        "fenix": "fenix",
         "flake-utils": "flake-utils",
         "git-hooks-nix": "git-hooks-nix",
         "home-manager": "home-manager",
@@ -224,11 +266,11 @@
         "treefmt-nix": "treefmt-nix"
       },
       "locked": {
-        "lastModified": 1786178946,
-        "narHash": "sha256-0wIDdJ70NG/2YiNHGF9VnrAPVhYwHaeX/VU1d0H+cL8=",
+        "lastModified": 1786726409,
+        "narHash": "sha256-74NJA1LRUjwDp3x9HMr2Sc47yCp5Oco+1i8QZJYaIAU=",
         "owner": "vig-os",
         "repo": "devkit",
-        "rev": "bcb0a257e3350cb50ce4ca0ddb856bdbc7867ba2",
+        "rev": "c624765830a2e0277b93d225995bde5c96e60384",
         "type": "github"
       },
       "original": {
