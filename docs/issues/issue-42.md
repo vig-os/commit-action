@@ -2,7 +2,7 @@
 type: issue
 state: open
 created: 2026-07-14T08:32:46Z
-updated: 2026-08-31T05:22:01Z
+updated: 2026-08-31T19:36:57Z
 author: renovate[bot]
 author_url: https://github.com/renovate[bot]
 url: https://github.com/vig-os/commit-action/issues/42
@@ -13,18 +13,20 @@ milestone: none
 projects: none
 parent: none
 children: none
-synced: 2026-08-31T07:58:38.574Z
+synced: 2026-09-01T07:04:41.891Z
 ---
 
 # [Issue 42]: [Dependency Dashboard](https://github.com/vig-os/commit-action/issues/42)
 
 This issue lists Renovate updates and detected dependencies. Read the [Dependency Dashboard](https://docs.renovatebot.com/key-concepts/dashboard/) docs to learn more.<br>[View this repository on the Mend.io Web Portal](https://developer.mend.io/github/vig-os/commit-action).
 
-## Other Branches
+## Awaiting Schedule
 
-The following updates are pending. To force the creation of a PR, click on a checkbox below.
+The following updates are awaiting their schedule. To get an update now, click on a checkbox below.
 
- - [ ] <!-- other-branch=renovate/lock-file-maintenance -->build(npm): lock file maintenance
+ - [ ] <!-- unschedule-branch=renovate/npm-dev-dependencies -->build(npm): update dependency typescript-eslint to v8.69.0
+ - [ ] <!-- unschedule-branch=renovate/lock-file-maintenance -->build(npm): lock file maintenance
+ - [ ] <!-- create-all-awaiting-schedule-prs -->🔐 **Create all awaiting schedule PRs at once** 🔐
 
 ## Detected Dependencies
 
@@ -170,7 +172,7 @@ The following updates are pending. To force the creation of a PR, click on a che
  - `ts-jest ^29.1.1`
  - `tsx ^4.7.0`
  - `typescript ^5.3.2` → [Updates: `^7.0.0`]
- - `typescript-eslint ^8.64.0`
+ - `typescript-eslint ^8.64.0` → [Updates: `^8.64.0`]
 
 </details>
 
