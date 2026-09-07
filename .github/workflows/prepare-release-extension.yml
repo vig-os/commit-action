@@ -1,5 +1,36 @@
-# Seeded by vigOS devkit — yours to edit; upgrades never overwrite this file.
-# Bugs / missing tools: https://github.com/vig-os/devkit/issues
+# Prepare Release Extension — rebuild and commit the ncc bundle
+#
+# Seeded by vigOS devkit as a no-op — yours to edit; upgrades never overwrite
+# this file. This project replaces the no-op with the use case the seed itself
+# names: rebuild a generated artifact onto the release branch before the PR
+# opens.
+#
+# WHY HERE. `dist/index.js` is the only thing a consumer of a released tag
+# executes (action.yml -> main: dist/index.js), and `ncc` inlines the runtime
+# dependency tree into it — so a lock-file-maintenance PR that never touches
+# `src/` still changes the shipped artifact. `dist-check.yml` deliberately does
+# not gate `dev` (#71: gating it failed every Renovate runtime-dep bump), and
+# `release-extension.yml` only VERIFIES at finalize, so the bundle went stale on
+# `dev` between every release and each cut needed a hand-written rebuild commit
+# first (#130, and again in #157). Building here makes the pipeline
+# build-then-verify: this job produces the bundle at cut time, and
+# release-extension.yml's `verify-dist` stays untouched as a real backstop
+# rather than the only gate.
+#
+# WHERE IN THE PIPELINE. prepare-release.yml calls this after the `prepare` job
+# has created release/X.Y.Z and fast-forwarded it onto the changelog-freeze
+# commit, and before `open-pr` — so the refreshed bundle is in the release PR
+# diff from its first CI run and `Dist Check` (which triggers on pull requests
+# into release/**) validates it. `rollback` lists `extension` in its `needs`, so
+# a failure here deletes the release branch and the commit below goes with it.
+#
+# CONTRACT. The workflow_call inputs are fixed — prepare-release.yml passes
+# `version`, `release_branch`, `branch_sha` and `dry_run` by name. It does NOT
+# pass `git_user_name` / `git_user_email`; they are kept so the seeded interface
+# stays intact, and are unused because the commit is made through the GitHub API
+# (authored by the release App, signed by GitHub) rather than by local git.
+# Toolchain inputs are not part of that contract, so this workflow self-resolves
+# the delivery mode from .vig-os, mirroring release-extension.yml and ci.yml.
 
 name: Prepare Release Extension
 
@@ -24,40 +55,143 @@ on:  # yamllint disable-line rule:truthy
         default: false
         type: boolean
       git_user_name:
-        description: "Git user name for commits"
+        description: "Git user name for commits (unused — commits go via the API)"
         required: false
         default: "github-actions[bot]"
         type: string
       git_user_email:
-        description: "Git user email for commits"
+        description: "Git user email for commits (unused — commits go via the API)"
         required: false
         default: "41898282+github-actions[bot]@users.noreply.github.com"
         type: string
 
-# The orchestrator calls this workflow with `secrets: inherit`, so a real
-# extension can mint the COMMIT_APP token to push to the write-protected release
-# branch — the same bypass the changelog-freeze commit already uses.
+# Read-only at the workflow level: the write is done with the COMMIT_APP
+# installation token minted below, which is also what gets past the release
+# branch's protection — the same bypass the changelog-freeze commit uses.
 permissions:
   contents: read
 
 jobs:
-  extension:
-    name: Prepare Extension Hook (Default No-op)
+  resolve-toolchain:
+    name: Resolve toolchain
     runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    outputs:
+      mode: ${{ steps.resolve.outputs.mode }}
+      image: ${{ steps.resolve.outputs.image }}
+      image-tag: ${{ steps.resolve.outputs.image-tag }}
+
     steps:
-      - name: Default extension summary
-        env:
-          VERSION: ${{ inputs.version }}
-          RELEASE_BRANCH: ${{ inputs.release_branch }}
-          BRANCH_SHA: ${{ inputs.branch_sha }}
-          DRY_RUN: ${{ inputs.dry_run }}
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          ref: ${{ inputs.branch_sha }}
+          persist-credentials: false
+          sparse-checkout: |
+            .vig-os
+            .github/actions/resolve-toolchain
+          sparse-checkout-cone-mode: false
+
+      - name: Resolve toolchain
+        id: resolve
+        uses: ./.github/actions/resolve-toolchain
+        with:
+          registry-token: ${{ github.token }}
+          registry-username: ${{ github.actor }}
+
+  bundle:
+    name: Rebuild dist bundle
+    needs: [resolve-toolchain]
+    runs-on: ubuntu-24.04
+    # Empty image (direnv/bare) => runs on the host; non-empty => in-container.
+    # The credentials block is inert on the host (proven by the #992 spike).
+    container:
+      image: ${{ needs.resolve-toolchain.outputs.image }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ github.token }}
+    timeout-minutes: 15
+
+    steps:
+      - name: Generate Commit App Token
+        id: commit_app_token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1  # v3
+        with:
+          client-id: ${{ secrets.COMMIT_APP_CLIENT_ID }}
+          private-key: ${{ secrets.COMMIT_APP_PRIVATE_KEY }}
+          # This job writes one file to one branch; nothing else is needed.
+          permission-contents: write
+
+      # persist-credentials: false — the rebuild is a local build and the commit
+      # goes over the API, so no step here uses the git credential.
+      - name: Checkout release branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          ref: ${{ inputs.branch_sha }}
+          persist-credentials: false
+
+      - name: Set up devkit toolchain
+        uses: ./.github/actions/setup-devkit-toolchain
+        with:
+          mode: ${{ needs.resolve-toolchain.outputs.mode }}
+          devkit-version: ${{ needs.resolve-toolchain.outputs.image-tag }}
+
+      - name: Install dependencies
+        run: just sync
+
+      - name: Rebuild bundle
+        run: just bundle
+
+      # Drift is read off `git status`, never off a walk of the dist/ directory:
+      # `just bundle` also re-emits the gitignored declaration byproducts under
+      # dist/src/, and force-adding whatever a bare directory walk finds is the
+      # vig-os/devkit#1159 bug that #134 had to clean up. Committing the exact
+      # paths git reports keeps dist/index.js and dist/package.json the only
+      # tracked artifacts.
+      - name: Detect bundle drift
+        id: drift
         run: |
-          echo "No prepare-release extension configured."
-          echo "Version: $VERSION"
-          echo "Release branch: $RELEASE_BRANCH"
-          echo "Branch head SHA: $BRANCH_SHA"
-          echo "Dry-run: $DRY_RUN"
-          echo "Replace this file to prepare the release branch before the PR"
-          echo "opens (e.g. rebuild + commit a generated artifact). A real"
-          echo "extension must honor dry-run (no writes) and may push to"
-          echo "$RELEASE_BRANCH via the COMMIT_APP token (secrets: inherit)."
+          set -euo pipefail
+          CHANGED=$(git status --porcelain -- dist/ | cut -c4- | paste -sd, -)
+          if [ -z "$CHANGED" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "✓ dist/ is already fresh — nothing to commit"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "files=$CHANGED" >> "$GITHUB_OUTPUT"
+            echo "dist/ is stale; will commit: $CHANGED"
+            git --no-pager diff --stat -- dist/
+            git status --short -- dist/
+          fi
+
+      # prepare-release.yml already skips this whole workflow on a dry run
+      # (`if: inputs.dry-run != true` at the call site), but the extension
+      # contract requires honoring the input, so gate the only write on it too.
+      - name: Report dry-run outcome
+        if: ${{ inputs.dry_run && steps.drift.outputs.changed == 'true' }}
+        env:
+          RELEASE_BRANCH: ${{ inputs.release_branch }}
+        run: |
+          echo "Dry run: dist/ is stale and would be committed to $RELEASE_BRANCH."
+
+      # Pinned to the last RELEASED tag of this action, not the local bundle:
+      # the whole point of this job is that the checked-out dist/ may be stale,
+      # so it must not be what performs the commit.
+      - name: Commit refreshed bundle to the release branch
+        if: ${{ steps.drift.outputs.changed == 'true' && !inputs.dry_run }}
+        uses: vig-os/commit-action@0361e9aa65b64711a18286ac5dfdcba7cc7a2ac7  # v0.3.2
+        env:
+          GH_TOKEN: ${{ steps.commit_app_token.outputs.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          TARGET_BRANCH: refs/heads/${{ inputs.release_branch }}
+          MAX_ATTEMPTS: "3"
+          # `chore`, not `build`: .vig-os leaves DEVKIT_REFS_POLICY empty, which
+          # resolves to chore-optional — every type but `chore` requires a
+          # `Refs:` line, and a bot rebuild has no issue to cite. Matches the
+          # `chore: freeze changelog for release X.Y.Z` commit that precedes it.
+          COMMIT_MESSAGE: |-
+            chore(dist): rebuild bundle for release ${{ inputs.version }}
+
+            Rebuild dist/index.js from the release branch lock file so the tag
+            ships the bundle its dependencies actually resolve to.
+          FILE_PATHS: ${{ steps.drift.outputs.files }}
