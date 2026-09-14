@@ -2,7 +2,7 @@
 type: issue
 state: open
 created: 2026-07-14T08:32:46Z
-updated: 2026-09-10T01:47:24Z
+updated: 2026-09-14T05:55:12Z
 author: renovate[bot]
 author_url: https://github.com/renovate[bot]
 url: https://github.com/vig-os/commit-action/issues/42
@@ -13,21 +13,18 @@ milestone: none
 projects: none
 parent: none
 children: none
-synced: 2026-09-10T06:54:26.591Z
+synced: 2026-09-14T07:26:25.314Z
 ---
 
 # [Issue 42]: [Dependency Dashboard](https://github.com/vig-os/commit-action/issues/42)
 
 This issue lists Renovate updates and detected dependencies. Read the [Dependency Dashboard](https://docs.renovatebot.com/key-concepts/dashboard/) docs to learn more.<br>[View this repository on the Mend.io Web Portal](https://developer.mend.io/github/vig-os/commit-action).
 
-## Awaiting Schedule
+## Other Branches
 
-The following updates are awaiting their schedule. To get an update now, click on a checkbox below.
+The following updates are pending. To force the creation of a PR, click on a checkbox below.
 
- - [ ] <!-- unschedule-branch=renovate/npm-dev-dependencies -->build(npm): update npm dev dependencies (`@types/node`, `typescript-eslint`)
- - [ ] <!-- unschedule-branch=renovate/github-actions-(minor-and-patch) -->ci(actions): update vig-os/commit-action action to v0.3.3
- - [ ] <!-- unschedule-branch=renovate/lock-file-maintenance -->build(npm): lock file maintenance
- - [ ] <!-- create-all-awaiting-schedule-prs -->🔐 **Create all awaiting schedule PRs at once** 🔐
+ - [ ] <!-- other-branch=renovate/lock-file-maintenance -->build(npm): lock file maintenance
 
 ## Detected Dependencies
 
@@ -89,7 +86,7 @@ The following updates are awaiting their schedule. To get an update now, click o
  - `actions/checkout v7.0.1@3d3c42e5aac5ba805825da76410c181273ba90b1`
  - `actions/create-github-app-token v3@bcd2ba49218906704ab6c1aa796996da409d3eb1`
  - `actions/checkout v7.0.1@3d3c42e5aac5ba805825da76410c181273ba90b1`
- - `vig-os/commit-action v0.3.2@0361e9aa65b64711a18286ac5dfdcba7cc7a2ac7` → [Updates: `v0.3.3`]
+ - `vig-os/commit-action v0.3.3@7ba7e1ae17547813e708d4cc6a771a09f978f724`
  - `ubuntu 24.04`
  - `ubuntu 24.04`
 
@@ -164,7 +161,7 @@ The following updates are awaiting their schedule. To get an update now, click o
  - `@actions/github ^9.1.1`
  - `@eslint/js ^10.0.1`
  - `@types/jest ^30.0.0`
- - `@types/node ^24.0.0` → [Updates: `^24.0.0`]
+ - `@types/node ^24.0.0`
  - `@vercel/ncc ^0.45.0`
  - `eslint ^10.7.0`
  - `globals ^17.7.0`
@@ -173,7 +170,7 @@ The following updates are awaiting their schedule. To get an update now, click o
  - `ts-jest ^29.1.1`
  - `tsx ^4.7.0`
  - `typescript ^5.3.2` → [Updates: `^7.0.0`]
- - `typescript-eslint ^8.64.0` → [Updates: `^8.64.0`]
+ - `typescript-eslint ^8.64.0`
 
 </details>
 
