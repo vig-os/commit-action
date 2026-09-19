@@ -2,7 +2,7 @@
 type: issue
 state: open
 created: 2026-07-14T08:32:46Z
-updated: 2026-09-16T11:34:07Z
+updated: 2026-09-18T21:50:40Z
 author: renovate[bot]
 author_url: https://github.com/renovate[bot]
 url: https://github.com/vig-os/commit-action/issues/42
@@ -13,7 +13,7 @@ milestone: none
 projects: none
 parent: none
 children: none
-synced: 2026-09-17T06:59:54.168Z
+synced: 2026-09-19T06:55:34.546Z
 ---
 
 # [Issue 42]: [Dependency Dashboard](https://github.com/vig-os/commit-action/issues/42)
@@ -24,7 +24,8 @@ This issue lists Renovate updates and detected dependencies. Read the [Dependenc
 
 The following updates are awaiting their schedule. To get an update now, click on a checkbox below.
 
- - [ ] <!-- unschedule-branch=renovate/npm-dev-dependencies -->build(npm): update npm dev dependencies (`@types/node`, `prettier`)
+ - [ ] <!-- unschedule-branch=renovate/npm-dev-dependencies -->build(npm): update npm dev dependencies (`@types/node`, `eslint`, `jest`, `prettier`)
+ - [ ] <!-- unschedule-branch=renovate/ubuntu-26.x -->ci(actions): update dependency ubuntu to v26
  - [ ] <!-- unschedule-branch=renovate/lock-file-maintenance -->build(npm): lock file maintenance
  - [ ] <!-- create-all-awaiting-schedule-prs -->🔐 **Create all awaiting schedule PRs at once** 🔐
 
@@ -62,15 +63,15 @@ The following updates are awaiting their schedule. To get an update now, click o
 
  - `actions/checkout v7.0.1@3d3c42e5aac5ba805825da76410c181273ba90b1`
  - `actions/checkout v7.0.1@3d3c42e5aac5ba805825da76410c181273ba90b1`
- - `ubuntu 24.04`
- - `ubuntu 24.04`
+ - `ubuntu 24.04` → [Updates: `26.04`]
+ - `ubuntu 24.04` → [Updates: `26.04`]
 
 </details>
 
 <details><summary>.github/workflows/e2e-smoke.yml (2)</summary>
 
  - `actions/checkout v7.0.1@3d3c42e5aac5ba805825da76410c181273ba90b1`
- - `ubuntu 24.04`
+ - `ubuntu 24.04` → [Updates: `26.04`]
 
 </details>
 
@@ -78,8 +79,8 @@ The following updates are awaiting their schedule. To get an update now, click o
 
  - `actions/checkout v7.0.1@3d3c42e5aac5ba805825da76410c181273ba90b1`
  - `actions/checkout v7.0.1@3d3c42e5aac5ba805825da76410c181273ba90b1`
- - `ubuntu 24.04`
- - `ubuntu 24.04`
+ - `ubuntu 24.04` → [Updates: `26.04`]
+ - `ubuntu 24.04` → [Updates: `26.04`]
 
 </details>
 
@@ -89,8 +90,8 @@ The following updates are awaiting their schedule. To get an update now, click o
  - `actions/create-github-app-token v3@bcd2ba49218906704ab6c1aa796996da409d3eb1`
  - `actions/checkout v7.0.1@3d3c42e5aac5ba805825da76410c181273ba90b1`
  - `vig-os/commit-action v0.3.3@7ba7e1ae17547813e708d4cc6a771a09f978f724`
- - `ubuntu 24.04`
- - `ubuntu 24.04`
+ - `ubuntu 24.04` → [Updates: `26.04`]
+ - `ubuntu 24.04` → [Updates: `26.04`]
 
 </details>
 
@@ -108,7 +109,7 @@ The following updates are awaiting their schedule. To get an update now, click o
 
  - `actions/checkout v7.0.1@3d3c42e5aac5ba805825da76410c181273ba90b1`
  - `actions/checkout v7.0.1@3d3c42e5aac5ba805825da76410c181273ba90b1`
- - `ubuntu 24.04`
+ - `ubuntu 24.04` → [Updates: `26.04`]
 
 </details>
 
@@ -121,8 +122,8 @@ The following updates are awaiting their schedule. To get an update now, click o
 
  - `actions/checkout v7.0.1@3d3c42e5aac5ba805825da76410c181273ba90b1`
  - `actions/checkout v7.0.1@3d3c42e5aac5ba805825da76410c181273ba90b1`
- - `ubuntu 24.04`
- - `ubuntu 24.04`
+ - `ubuntu 24.04` → [Updates: `26.04`]
+ - `ubuntu 24.04` → [Updates: `26.04`]
 
 </details>
 
@@ -165,9 +166,9 @@ The following updates are awaiting their schedule. To get an update now, click o
  - `@types/jest ^30.0.0`
  - `@types/node ^24.0.0` → [Updates: `^24.0.0`]
  - `@vercel/ncc ^0.45.0`
- - `eslint ^10.7.0`
+ - `eslint ^10.7.0` → [Updates: `^10.7.0`]
  - `globals ^17.7.0`
- - `jest ^30.4.2`
+ - `jest ^30.4.2` → [Updates: `^30.4.2`]
  - `prettier ^3.1.0` → [Updates: `^3.1.0`]
  - `ts-jest ^29.1.1`
  - `tsx ^4.7.0`
