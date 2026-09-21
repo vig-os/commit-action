@@ -43,7 +43,7 @@ concurrency:
 jobs:
   smoke:
     name: Published Tag Smoke
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     permissions:
       # Push the scratch branch and let the released action create a commit on
