@@ -38,7 +38,7 @@ jobs:
   e2e-smoke:
     name: E2E Smoke
     if: github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     permissions:
       # Push the scratch branch and let the action under test create a commit

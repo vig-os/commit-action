@@ -55,7 +55,7 @@ permissions:
 jobs:
   resolve-toolchain:
     name: Resolve toolchain
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 2
     outputs:
       mode: ${{ steps.resolve.outputs.mode }}
@@ -82,7 +82,7 @@ jobs:
   verify-dist:
     name: Verify dist bundle
     needs: [resolve-toolchain]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     # Empty image (direnv/bare) => runs on the host; non-empty => in-container.
     # The credentials block is inert on the host (proven by the #992 spike).
     container:
