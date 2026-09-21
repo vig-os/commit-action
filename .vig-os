@@ -7,7 +7,7 @@
 
 # Scaffold/image version pin (managed by release automation). Readers also
 # accept the legacy DEVCONTAINER_VERSION key for un-migrated consumers (#781).
-DEVKIT_VERSION=1.12.0
+DEVKIT_VERSION=1.15.1
 
 # Delivery mode: devcontainer | direnv | both | bare. Ships empty (= unset:
 # resolved and written back on scaffold) so an aborted upgrade can never
@@ -55,6 +55,19 @@ DEVKIT_FLOATING_TAGS=major,minor
 # dependency-review jobs always stay on the hosted default (#1173).
 DEVKIT_CI_RUNNER=
 
+# Absolute path for the direnv-mode dev-shell gcroot profile on the runner host.
+# Empty (default) => `$RUNNER_TEMP/devkit-dev-profile`, wiped with the job — the
+# right place on a hosted runner, since the machine goes too. An EPHEMERAL
+# self-hosted runner inverts that: RUNNER_TEMP is wiped between jobs while the
+# /nix/store persists, so nothing roots the dev-shell closure and the host's
+# nix.gc collects the one every CI run needs. Point this at a persistent,
+# runner-writable directory OUTSIDE the runner's `_work` tree, e.g.
+# `/var/lib/devkit/gcroots/dev-profile`. Runner slots on the same host share it
+# (concurrent `nix develop --profile` realisations take the profile lock and
+# converge); it must be a local persistent directory, not a per-job tmpfs.
+# Consumed by the ci.yml lanes DEVKIT_CI_RUNNER can move onto that host (#1601).
+DEVKIT_DEV_PROFILE_PATH=
+
 # Branch the scaffolded sync-issues job commits to. Empty (default) resolves to
 # the workflow-model default — `dev` (gitflow) / `main` (trunk) — unchanged for
 # existing consumers. A repo whose `main` carries a require-PR ruleset (which
@@ -89,7 +102,8 @@ DEVKIT_FEATURES_DISABLED=
 # `optional` never requires Refs (any approved type may omit it); `required`
 # demands Refs on every type, `chore` included. Realized at scaffold time (an
 # anchored render of the hook arg + resolve-toolchain's `refs-optional-types`
-# output); written back only for a non-default value (#1282).
+# output); written back only for a non-default value (#1282). Sugar over
+# DEVKIT_REFS_OPTIONAL_TYPES below, which WINS when both are set (#1633).
 DEVKIT_REFS_POLICY=
 
 # Approved commit types for the commit-message gate — a comma-separated
@@ -106,6 +120,23 @@ DEVKIT_REFS_POLICY=
 # (an anchored render of the hook arg + resolve-toolchain's `commit-types`
 # output); written back only for a non-empty value (#1431).
 DEVKIT_COMMIT_TYPES=
+
+# Commit types whose `Refs:` line is OPTIONAL — a comma-separated
+# (whitespace-tolerant) FULL REPLACEMENT list driving the validate-commit-msg
+# hook's `--refs-optional-types` arg — scaffolded AND flake-generated (read by
+# flake.nix at eval time) — and CI's validate-commit-range from this one key.
+# Empty (default) falls through to DEVKIT_REFS_POLICY above, i.e. `chore` —
+# unchanged for devkit or existing consumers. Set it to exempt a NAMED set
+# instead: a repo that adds a `record` type via DEVKIT_COMMIT_TYPES for
+# deliberately issue-less commits writes `chore,record` here and keeps the
+# Refs requirement on `feat`/`fix`/everything else. Entries must be lowercase
+# alphanumerics AND a subset of the resolved DEVKIT_COMMIT_TYPES (guarded
+# loudly at scaffold time). This key WINS over DEVKIT_REFS_POLICY when both
+# are set — the narrower key decides; use `DEVKIT_REFS_POLICY=required` to
+# exempt nothing at all. Realized at scaffold time (an anchored render of the
+# hook arg + resolve-toolchain's `refs-optional-types` output); written back
+# only for a non-empty value (#1633).
+DEVKIT_REFS_OPTIONAL_TYPES=
 
 # Issue-numbered branch types for the branch guard — a comma-separated
 # (whitespace-tolerant) FULL REPLACEMENT of the `<type>/<issue>-<summary>` set,

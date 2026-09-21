@@ -207,14 +207,15 @@ jobs:
           echo "pre_finalize_sha=$PRE_FINALIZE_SHA" >> "$GITHUB_OUTPUT"
           echo "Pre-finalization SHA: $PRE_FINALIZE_SHA"
 
+      # Content, not just the heading: a hotfix branch (prepare-hotfix.yml)
+      # is seeded with an EMPTY `## [X.Y.Z] - TBD` section that the fix PR
+      # fills, so a bare grep would let an unfilled section ship (#1625).
       - name: Verify CHANGELOG has TBD entry
         env:
           VERSION: ${{ steps.vars.outputs.version }}
         run: |
-          if ! grep -Fq "## [$VERSION] - TBD" CHANGELOG.md; then
-            echo "ERROR: CHANGELOG.md does not contain '## [$VERSION] - TBD'"
-            exit 1
-          fi
+          set -euo pipefail
+          prepare-changelog validate --version "$VERSION" CHANGELOG.md
 
       - name: Compute publish version
         id: publish_meta
@@ -521,7 +522,7 @@ jobs:
       - name: Commit and push finalization changes via API
         if: ${{ inputs.release_kind == 'final' }}
         id: finalize_commit
-        uses: vig-os/commit-action@0361e9aa65b64711a18286ac5dfdcba7cc7a2ac7  # v0.3.2
+        uses: vig-os/commit-action@7ba7e1ae17547813e708d4cc6a771a09f978f724  # v0.3.3
         env:
           GH_TOKEN: ${{ steps.commit_app_token.outputs.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
