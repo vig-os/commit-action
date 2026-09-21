@@ -71,12 +71,21 @@ outputs:
       use with fromJSON() in `runs-on`. Defaults to ["ubuntu-24.04"] when the
       key is absent.
     value: ${{ steps.resolve.outputs.runner-json }}
+  dev-profile-path:
+    description: >-
+      Absolute dev-shell gcroot profile path from DEVKIT_DEV_PROFILE_PATH,
+      plumbed into setup-devkit-toolchain's `dev-profile-path`. Empty (default)
+      => the action's own `$RUNNER_TEMP/devkit-dev-profile`. A value that cannot
+      persist (relative, or inside the runner's `_work` tree) fails here, before
+      any lane realises the dev-shell (#1601).
+    value: ${{ steps.resolve.outputs.dev-profile-path }}
   refs-optional-types:
     description: >-
-      Comma-separated commit types whose Refs line is optional, mapped from
-      DEVKIT_REFS_POLICY for validate-commit-range. `chore` (default/absent),
-      the resolved commit-types list (`optional`), or the `none` sentinel
-      (`required`).
+      Comma-separated commit types whose Refs line is optional, for
+      validate-commit-range. DEVKIT_REFS_OPTIONAL_TYPES names the set
+      directly and wins; otherwise DEVKIT_REFS_POLICY maps to `chore`
+      (default/absent), the resolved commit-types list (`optional`), or the
+      `none` sentinel (`required`).
     value: ${{ steps.resolve.outputs.refs-optional-types }}
   commit-types:
     description: >-
@@ -123,7 +132,9 @@ runs:
         TAG_PREFIX=""
         FLOATING_TAGS=""
         CI_RUNNER=""
+        DEV_PROFILE_PATH=""
         REFS_POLICY=""
+        REFS_OPTIONAL_TYPES_RAW=""
         COMMIT_TYPES=""
         BRANCH_TYPES=""
         DRIFT_CHECK=""
@@ -139,7 +150,7 @@ runs:
             [[ "$line" =~ ^[[:space:]]*# ]] && continue
 
             case "$line" in
-              DEVKIT_MODE=*|DEVKIT_VERSION=*|DEVCONTAINER_VERSION=*|DEVKIT_TAG_PREFIX=*|DEVKIT_FLOATING_TAGS=*|DEVKIT_CI_RUNNER=*|DEVKIT_REFS_POLICY=*|DEVKIT_COMMIT_TYPES=*|DEVKIT_BRANCH_TYPES=*|DEVKIT_DRIFT_CHECK=*|DEVKIT_LANGUAGES=*)
+              DEVKIT_MODE=*|DEVKIT_VERSION=*|DEVCONTAINER_VERSION=*|DEVKIT_TAG_PREFIX=*|DEVKIT_FLOATING_TAGS=*|DEVKIT_CI_RUNNER=*|DEVKIT_DEV_PROFILE_PATH=*|DEVKIT_REFS_POLICY=*|DEVKIT_REFS_OPTIONAL_TYPES=*|DEVKIT_COMMIT_TYPES=*|DEVKIT_BRANCH_TYPES=*|DEVKIT_DRIFT_CHECK=*|DEVKIT_LANGUAGES=*)
                 key="${line%%=*}"
                 value="${line#*=}"
                 value="${value#"${value%%[![:space:]]*}"}"
@@ -158,7 +169,9 @@ runs:
                   DEVKIT_TAG_PREFIX) TAG_PREFIX="$value" ;;
                   DEVKIT_FLOATING_TAGS) FLOATING_TAGS="$value" ;;
                   DEVKIT_CI_RUNNER) CI_RUNNER="$value" ;;
+                  DEVKIT_DEV_PROFILE_PATH) DEV_PROFILE_PATH="$value" ;;
                   DEVKIT_REFS_POLICY) REFS_POLICY="$value" ;;
+                  DEVKIT_REFS_OPTIONAL_TYPES) REFS_OPTIONAL_TYPES_RAW="$value" ;;
                   DEVKIT_COMMIT_TYPES) COMMIT_TYPES="$value" ;;
                   DEVKIT_BRANCH_TYPES) BRANCH_TYPES="$value" ;;
                   DEVKIT_DRIFT_CHECK) DRIFT_CHECK="$value" ;;
@@ -216,6 +229,48 @@ runs:
         [[ "$runner_first" -eq 1 ]] && RUNNER_JSON+="\"ubuntu-24.04\""
         RUNNER_JSON+="]"
         echo "runner-json=$RUNNER_JSON" >> "$GITHUB_OUTPUT"
+
+        # Dev-shell gcroot profile path (#1601): DEVKIT_DEV_PROFILE_PATH moves
+        # the direnv dev-shell's gcroot out of RUNNER_TEMP, which an ephemeral
+        # self-hosted runner wipes between jobs while its /nix/store persists —
+        # leaving the closure every CI run needs unrooted and collectable by the
+        # host's nix.gc. Absent/empty => the toolchain action's own RUNNER_TEMP
+        # default, so every existing consumer is unchanged.
+        #
+        # Vetted HERE, once, on the hosted producer job: a value no host could
+        # make persistent is a manifest typo, and catching it after three
+        # toolchain lanes have each realised a dev-shell helps nobody. What only
+        # the target host can answer — is the directory there, is it writable —
+        # stays in the action's step. Neither may fall back silently: a
+        # job-scoped gcroot is indistinguishable from the bug.
+        DEV_PROFILE_PATH_RAW="$DEV_PROFILE_PATH"
+        # Trim trailing slashes: `--profile /a/b/` and `/a/b` name the same
+        # gcroot, and the step takes `dirname` of the value.
+        DEV_PROFILE_PATH="${DEV_PROFILE_PATH%"${DEV_PROFILE_PATH##*[!/]}"}"
+        if [[ -n "$DEV_PROFILE_PATH" ]]; then
+          if [[ "$DEV_PROFILE_PATH" != /* ]]; then
+            echo "::error::Invalid DEVKIT_DEV_PROFILE_PATH in .vig-os: $DEV_PROFILE_PATH (must be an ABSOLUTE path — a relative one resolves against the checkout, which the runner wipes between jobs)"
+            exit 1
+          fi
+          # `_work` is the runner's work-tree root and `_temp` its RUNNER_TEMP
+          # leaf — both runner-internal names, and both wiped between ephemeral
+          # jobs. GITHUB_WORKSPACE lives under `_work` too. This catches the
+          # mistake the knob exists to prevent (rooting inside the very tree the
+          # runner clears); it cannot prove an arbitrary path is persistent, and
+          # does not try to.
+          case "$DEV_PROFILE_PATH" in
+            */_work/*|*/_work|*/_temp/*|*/_temp)
+              echo "::error::Invalid DEVKIT_DEV_PROFILE_PATH in .vig-os: $DEV_PROFILE_PATH (inside the runner's own work tree — RUNNER_TEMP and GITHUB_WORKSPACE both live there and are wiped between jobs). Point it at a persistent directory outside the runner workspace, e.g. /var/lib/devkit/gcroots/dev-profile"
+              exit 1
+              ;;
+          esac
+        elif [[ -n "${DEV_PROFILE_PATH_RAW:-}" ]]; then
+          # Only reachable for a value that was nothing but slashes ("/"), which
+          # the trim above empties: a gcroot cannot be the filesystem root.
+          echo "::error::Invalid DEVKIT_DEV_PROFILE_PATH in .vig-os: $DEV_PROFILE_PATH_RAW (must name a profile path, not the filesystem root)"
+          exit 1
+        fi
+        echo "dev-profile-path=$DEV_PROFILE_PATH" >> "$GITHUB_OUTPUT"
 
         # Commit types (#1431): resolve DEVKIT_COMMIT_TYPES into the --types
         # list validate-commit-range consumes in the commit-checks job. This is
@@ -299,6 +354,42 @@ runs:
           required) REFS_OPTIONAL_TYPES="none" ;;
           *)        REFS_OPTIONAL_TYPES="chore" ;;
         esac
+
+        # Refs-optional types (#1633): DEVKIT_REFS_OPTIONAL_TYPES names the
+        # exempt set directly and WINS over the policy enum above — the
+        # documented precedence, mirrored in init-workspace.sh and
+        # nix/hooks.nix (three renderers, one resolution). Same guard
+        # philosophy as commit-types/branch-types: the loud guard (charset AND
+        # subset-of-approved-types) lives at the write path, and here a bad
+        # value falls back with a warning rather than failing the job. But
+        # fail-safe for an EXEMPTION list means the SMALLEST set, not the stock
+        # mapping: falling back to `optional` would switch the Refs gate off
+        # for every type because the narrower key had a typo. So the fallback
+        # clamps to `chore` unless the policy is already narrower (`none`).
+        # This is the one place the #1431 commit-types analogy inverts — there
+        # the stock list is a subset of any sane custom one, here it is not.
+        if [[ -n "$REFS_OPTIONAL_TYPES_RAW" ]]; then
+          resolved_refs_optional=""
+          refs_optional_valid=1
+          IFS=',' read -ra refs_optional_entries <<< "$REFS_OPTIONAL_TYPES_RAW"
+          for entry in "${refs_optional_entries[@]}"; do
+            entry="${entry#"${entry%%[![:space:]]*}"}"
+            entry="${entry%"${entry##*[![:space:]]}"}"
+            [[ -z "$entry" ]] && continue
+            if [[ ! "$entry" =~ ^[a-z][a-z0-9]*$ ]] \
+              || [[ ",$RESOLVED_COMMIT_TYPES," != *",$entry,"* ]]; then
+              refs_optional_valid=0
+              break
+            fi
+            resolved_refs_optional+="${resolved_refs_optional:+,}$entry"
+          done
+          if [[ "$refs_optional_valid" -ne 1 ]]; then
+            [[ "$REFS_OPTIONAL_TYPES" != "none" ]] && REFS_OPTIONAL_TYPES="chore"
+            echo "::warning::Invalid DEVKIT_REFS_OPTIONAL_TYPES in .vig-os ('$REFS_OPTIONAL_TYPES_RAW'); falling back to '$REFS_OPTIONAL_TYPES' (an invalid exemption list never relaxes the gate)."
+          elif [[ -n "$resolved_refs_optional" ]]; then
+            REFS_OPTIONAL_TYPES="$resolved_refs_optional"
+          fi
+        fi
         echo "refs-optional-types=$REFS_OPTIONAL_TYPES" >> "$GITHUB_OUTPUT"
 
         # Scaffold-drift gate (#1295): DEVKIT_DRIFT_CHECK toggles ci.yml's
