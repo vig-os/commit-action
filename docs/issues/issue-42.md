@@ -2,7 +2,7 @@
 type: issue
 state: open
 created: 2026-07-14T08:32:46Z
-updated: 2026-09-21T06:49:48Z
+updated: 2026-09-22T00:16:10Z
 author: renovate[bot]
 author_url: https://github.com/renovate[bot]
 url: https://github.com/vig-os/commit-action/issues/42
@@ -13,22 +13,25 @@ milestone: none
 projects: none
 parent: none
 children: none
-synced: 2026-09-21T07:30:42.627Z
+synced: 2026-09-22T07:09:29.406Z
 ---
 
 # [Issue 42]: [Dependency Dashboard](https://github.com/vig-os/commit-action/issues/42)
 
 This issue lists Renovate updates and detected dependencies. Read the [Dependency Dashboard](https://docs.renovatebot.com/key-concepts/dashboard/) docs to learn more.<br>[View this repository on the Mend.io Web Portal](https://developer.mend.io/github/vig-os/commit-action).
 
-## Other Branches
+## Awaiting Schedule
 
-The following updates are pending. To force the creation of a PR, click on a checkbox below.
+The following updates are awaiting their schedule. To get an update now, click on a checkbox below.
 
- - [ ] <!-- other-branch=renovate/lock-file-maintenance -->build(npm): lock file maintenance
+ - [ ] <!-- unschedule-branch=renovate/npm-dev-dependencies -->build(npm): update dependency typescript-eslint to v8.70.1
+ - [ ] <!-- unschedule-branch=renovate/ubuntu-26.x -->ci(actions): update dependency ubuntu to v26
+ - [ ] <!-- unschedule-branch=renovate/lock-file-maintenance -->build(npm): lock file maintenance
+ - [ ] <!-- create-all-awaiting-schedule-prs -->🔐 **Create all awaiting schedule PRs at once** 🔐
 
 ## Detected Dependencies
 
-<details><summary>github-actions (19)</summary>
+<details><summary>github-actions (20)</summary>
 <blockquote>
 
 <details><summary>.github/actions/setup-devkit-toolchain/action.yml</summary>
@@ -78,6 +81,25 @@ The following updates are pending. To force the creation of a PR, click on a che
  - `actions/checkout v7.0.1@3d3c42e5aac5ba805825da76410c181273ba90b1`
  - `ubuntu 26.04`
  - `ubuntu 26.04`
+
+</details>
+
+<details><summary>.github/workflows/prepare-hotfix.yml (14)</summary>
+
+ - `actions/checkout v7.0.1@3d3c42e5aac5ba805825da76410c181273ba90b1`
+ - `actions/checkout v7.0.1@3d3c42e5aac5ba805825da76410c181273ba90b1`
+ - `actions/create-github-app-token v3@bcd2ba49218906704ab6c1aa796996da409d3eb1`
+ - `actions/checkout v7.0.1@3d3c42e5aac5ba805825da76410c181273ba90b1`
+ - `vig-os/commit-action v0.3.3@7ba7e1ae17547813e708d4cc6a771a09f978f724`
+ - `actions/create-github-app-token v3@bcd2ba49218906704ab6c1aa796996da409d3eb1`
+ - `actions/checkout v7.0.1@3d3c42e5aac5ba805825da76410c181273ba90b1`
+ - `actions/create-github-app-token v3@bcd2ba49218906704ab6c1aa796996da409d3eb1`
+ - `actions/checkout v7.0.1@3d3c42e5aac5ba805825da76410c181273ba90b1`
+ - `ubuntu 24.04` → [Updates: `26.04`]
+ - `ubuntu 24.04` → [Updates: `26.04`]
+ - `ubuntu 24.04` → [Updates: `26.04`]
+ - `ubuntu 24.04` → [Updates: `26.04`]
+ - `ubuntu 24.04` → [Updates: `26.04`]
 
 </details>
 
@@ -170,7 +192,7 @@ The following updates are pending. To force the creation of a PR, click on a che
  - `ts-jest ^29.1.1`
  - `tsx ^4.7.0`
  - `typescript ^5.3.2` → [Updates: `^7.0.0`]
- - `typescript-eslint ^8.64.0`
+ - `typescript-eslint ^8.64.0` → [Updates: `^8.64.0`]
 
 </details>
 
