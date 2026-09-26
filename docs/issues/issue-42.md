@@ -2,7 +2,7 @@
 type: issue
 state: open
 created: 2026-07-14T08:32:46Z
-updated: 2026-09-23T17:42:17Z
+updated: 2026-09-26T01:38:07Z
 author: renovate[bot]
 author_url: https://github.com/renovate[bot]
 url: https://github.com/vig-os/commit-action/issues/42
@@ -13,7 +13,7 @@ milestone: none
 projects: none
 parent: none
 children: none
-synced: 2026-09-24T07:02:00.159Z
+synced: 2026-09-26T06:57:43.398Z
 ---
 
 # [Issue 42]: [Dependency Dashboard](https://github.com/vig-os/commit-action/issues/42)
@@ -24,7 +24,7 @@ This issue lists Renovate updates and detected dependencies. Read the [Dependenc
 
 The following updates are awaiting their schedule. To get an update now, click on a checkbox below.
 
- - [ ] <!-- unschedule-branch=renovate/npm-dev-dependencies -->build(npm): update npm dev dependencies (`prettier`, `ts-jest`, `typescript-eslint`)
+ - [ ] <!-- unschedule-branch=renovate/npm-dev-dependencies -->build(npm): update npm dev dependencies (`@types/node`, `prettier`, `ts-jest`, `typescript-eslint`)
  - [ ] <!-- unschedule-branch=renovate/ubuntu-26.x -->ci(actions): update dependency ubuntu to v26
  - [ ] <!-- unschedule-branch=renovate/lock-file-maintenance -->build(npm): lock file maintenance
  - [ ] <!-- create-all-awaiting-schedule-prs -->🔐 **Create all awaiting schedule PRs at once** 🔐
@@ -183,7 +183,7 @@ The following updates are awaiting their schedule. To get an update now, click o
  - `@actions/github ^9.1.1`
  - `@eslint/js ^10.0.1`
  - `@types/jest ^30.0.0`
- - `@types/node ^24.0.0`
+ - `@types/node ^24.0.0` → [Updates: `^24.0.0`]
  - `@vercel/ncc ^0.45.0`
  - `eslint ^10.7.0`
  - `globals ^17.7.0`
