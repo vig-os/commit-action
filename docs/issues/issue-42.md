@@ -2,7 +2,7 @@
 type: issue
 state: open
 created: 2026-07-14T08:32:46Z
-updated: 2026-09-28T05:39:57Z
+updated: 2026-09-29T00:37:17Z
 author: renovate[bot]
 author_url: https://github.com/renovate[bot]
 url: https://github.com/vig-os/commit-action/issues/42
@@ -13,24 +13,20 @@ milestone: none
 projects: none
 parent: none
 children: none
-synced: 2026-09-28T08:04:47.969Z
+synced: 2026-09-29T07:45:20.036Z
 ---
 
 # [Issue 42]: [Dependency Dashboard](https://github.com/vig-os/commit-action/issues/42)
 
 This issue lists Renovate updates and detected dependencies. Read the [Dependency Dashboard](https://docs.renovatebot.com/key-concepts/dashboard/) docs to learn more.<br>[View this repository on the Mend.io Web Portal](https://developer.mend.io/github/vig-os/commit-action).
 
-## Other Branches
+## Awaiting Schedule
 
-The following updates are pending. To force the creation of a PR, click on a checkbox below.
+The following updates are awaiting their schedule. To get an update now, click on a checkbox below.
 
- - [ ] <!-- other-branch=renovate/lock-file-maintenance -->build(npm): lock file maintenance
-
-## Open
-
-The following updates have all been created. To force a retry/rebase of any, click on a checkbox below.
-
- - [ ] <!-- rebase-branch=renovate/ubuntu-26.x -->[ci(actions): update dependency ubuntu to v26](../pull/171)
+ - [ ] <!-- unschedule-branch=renovate/npm-dev-dependencies -->build(npm): update dependency typescript-eslint to v8.71.0
+ - [ ] <!-- unschedule-branch=renovate/lock-file-maintenance -->build(npm): lock file maintenance
+ - [ ] <!-- create-all-awaiting-schedule-prs -->🔐 **Create all awaiting schedule PRs at once** 🔐
 
 ## Detected Dependencies
 
@@ -98,11 +94,11 @@ The following updates have all been created. To force a retry/rebase of any, cli
  - `actions/checkout v7.0.1@3d3c42e5aac5ba805825da76410c181273ba90b1`
  - `actions/create-github-app-token v3@bcd2ba49218906704ab6c1aa796996da409d3eb1`
  - `actions/checkout v7.0.1@3d3c42e5aac5ba805825da76410c181273ba90b1`
- - `ubuntu 24.04` → [Updates: `26.04`]
- - `ubuntu 24.04` → [Updates: `26.04`]
- - `ubuntu 24.04` → [Updates: `26.04`]
- - `ubuntu 24.04` → [Updates: `26.04`]
- - `ubuntu 24.04` → [Updates: `26.04`]
+ - `ubuntu 26.04`
+ - `ubuntu 26.04`
+ - `ubuntu 26.04`
+ - `ubuntu 26.04`
+ - `ubuntu 26.04`
 
 </details>
 
@@ -195,7 +191,7 @@ The following updates have all been created. To force a retry/rebase of any, cli
  - `ts-jest ^29.1.1`
  - `tsx ^4.7.0`
  - `typescript ^5.3.2` → [Updates: `^7.0.0`]
- - `typescript-eslint ^8.64.0`
+ - `typescript-eslint ^8.64.0` → [Updates: `^8.64.0`]
 
 </details>
 
