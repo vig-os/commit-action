@@ -2,7 +2,7 @@
 type: issue
 state: open
 created: 2026-07-14T08:32:46Z
-updated: 2026-10-28T02:35:02Z
+updated: 2026-11-02T02:10:05Z
 author: renovate[bot]
 author_url: https://github.com/renovate[bot]
 url: https://github.com/vig-os/commit-action/issues/42
@@ -13,25 +13,20 @@ milestone: none
 projects: none
 parent: none
 children: none
-synced: 2026-10-28T07:48:49.057Z
+synced: 2026-11-02T08:43:40.305Z
 ---
 
 # [Issue 42]: [Dependency Dashboard](https://github.com/vig-os/commit-action/issues/42)
 
 This issue lists Renovate updates and detected dependencies. Read the [Dependency Dashboard](https://docs.renovatebot.com/key-concepts/dashboard/) docs to learn more.<br>[View this repository on the Mend.io Web Portal](https://developer.mend.io/github/vig-os/commit-action).
 
-## Awaiting Schedule
-
-The following updates are awaiting their schedule. To get an update now, click on a checkbox below.
-
- - [ ] <!-- unschedule-branch=renovate/major-npm-dev-dependencies -->build(npm): update dependency @types/node to v26
-
 ## Open
 
 The following updates have all been created. To force a retry/rebase of any, click on a checkbox below.
 
  - [ ] <!-- rebase-branch=renovate/actions-create-github-app-token-digest -->[chore(deps): update actions/create-github-app-token digest to 64ab729](../pull/179)
- - [ ] <!-- rebase-branch=renovate/npm-dev-dependencies -->[build(npm): update npm dev dependencies](../pull/177) (`@types/node`, `eslint`, `prettier`, `ts-jest`, `typescript-eslint`)
+ - [ ] <!-- rebase-branch=renovate/npm-dev-dependencies -->[build(npm): update npm dev dependencies](../pull/177) (`@types/node`, `eslint`, `globals`, `prettier`, `ts-jest`, `typescript-eslint`)
+ - [ ] <!-- rebase-branch=renovate/major-npm-dev-dependencies -->[build(npm): update dependency @types/node to v26](../pull/180)
  - [ ] <!-- rebase-branch=renovate/lock-file-maintenance -->[build(npm): lock file maintenance](../pull/178)
  - [ ] <!-- rebase-all-open-prs -->**Click on this checkbox to rebase all open PRs at once**
 
@@ -198,7 +193,7 @@ The following updates have all been created. To force a retry/rebase of any, cli
  - `@types/node ^24.0.0` → [Updates: `^24.0.0`, `^26.0.0`]
  - `@vercel/ncc ^0.45.0`
  - `eslint ^10.7.0` → [Updates: `^10.7.0`]
- - `globals ^17.7.0`
+ - `globals ^17.7.0` → [Updates: `^17.7.0`]
  - `jest ^30.4.2`
  - `prettier ^3.1.0` → [Updates: `^3.1.0`]
  - `ts-jest ^29.1.1` → [Updates: `^29.1.1`]
