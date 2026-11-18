@@ -2,7 +2,7 @@
 type: issue
 state: open
 created: 2026-07-14T08:32:46Z
-updated: 2026-11-05T19:54:57Z
+updated: 2026-11-17T14:07:40Z
 author: renovate[bot]
 author_url: https://github.com/renovate[bot]
 url: https://github.com/vig-os/commit-action/issues/42
@@ -13,7 +13,7 @@ milestone: none
 projects: none
 parent: none
 children: none
-synced: 2026-11-06T08:50:48.669Z
+synced: 2026-11-18T09:36:24.593Z
 ---
 
 # [Issue 42]: [Dependency Dashboard](https://github.com/vig-os/commit-action/issues/42)
@@ -125,16 +125,16 @@ The following updates have all been created. To force a retry/rebase of any, cli
  - `@actions/github ^9.1.1`
  - `@eslint/js ^10.0.1`
  - `@types/jest ^30.0.0`
- - `@types/node ^24.0.0` → [Updates: `^24.0.0`, `^26.0.0`]
+ - `@types/node ^24.0.0` → [Updates: `lock file @ 24.19.2`, `^26.0.0`]
  - `@vercel/ncc ^0.45.0`
- - `eslint ^10.7.0` → [Updates: `^10.7.0`]
- - `globals ^17.7.0` → [Updates: `^17.7.0`]
+ - `eslint ^10.7.0` → [Updates: `lock file @ 10.15.0`]
+ - `globals ^17.7.0` → [Updates: `lock file @ 17.14.0`]
  - `jest ^30.4.2`
- - `prettier ^3.1.0` → [Updates: `^3.1.0`]
- - `ts-jest ^29.1.1` → [Updates: `^29.1.1`]
+ - `prettier ^3.1.0` → [Updates: `lock file @ 3.10.1`]
+ - `ts-jest ^29.1.1` → [Updates: `lock file @ 29.4.15`]
  - `tsx ^4.7.0`
  - `typescript ^5.3.2` → [Updates: `^7.0.0`]
- - `typescript-eslint ^8.64.0` → [Updates: `^8.64.0`]
+ - `typescript-eslint ^8.64.0` → [Updates: `lock file @ 8.73.0`]
 
 </details>
 
