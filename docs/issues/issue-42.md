@@ -2,7 +2,7 @@
 type: issue
 state: open
 created: 2026-07-14T08:32:46Z
-updated: 2026-11-17T14:07:40Z
+updated: 2026-11-18T21:02:37Z
 author: renovate[bot]
 author_url: https://github.com/renovate[bot]
 url: https://github.com/vig-os/commit-action/issues/42
@@ -13,7 +13,7 @@ milestone: none
 projects: none
 parent: none
 children: none
-synced: 2026-11-18T09:36:24.593Z
+synced: 2026-11-19T09:43:50.767Z
 ---
 
 # [Issue 42]: [Dependency Dashboard](https://github.com/vig-os/commit-action/issues/42)
@@ -24,7 +24,7 @@ This issue lists Renovate updates and detected dependencies. Read the [Dependenc
 
 The following updates have all been created. To force a retry/rebase of any, click on a checkbox below.
 
- - [ ] <!-- rebase-branch=renovate/actions-create-github-app-token-digest -->[chore(deps): update actions/create-github-app-token digest to 64ab729](../pull/179)
+ - [ ] <!-- rebase-branch=renovate/actions-create-github-app-token-digest -->[chore(deps): update actions/create-github-app-token digest to f418cff](../pull/179)
  - [ ] <!-- rebase-branch=renovate/npm-dev-dependencies -->[build(npm): update npm dev dependencies](../pull/177) (`@types/node`, `eslint`, `globals`, `prettier`, `ts-jest`, `typescript-eslint`)
  - [ ] <!-- rebase-branch=renovate/major-npm-dev-dependencies -->[build(npm): update dependency @types/node to v26](../pull/180)
  - [ ] <!-- rebase-branch=renovate/lock-file-maintenance -->[build(npm): lock file maintenance](../pull/178)
