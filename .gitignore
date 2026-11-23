@@ -30,6 +30,10 @@ justfile.local
 # process-compose / services-flake local dev services state (#795)
 data/
 
+# Per-clone site bindings and local cloud profiles
+.site/
+.aws/
+
 # ── Node / TypeScript ─────────────────────────────────────────────────────────
 # Appended to the language-neutral base by init-workspace.sh when a package.json
 # marks the repo as Node/TypeScript.
