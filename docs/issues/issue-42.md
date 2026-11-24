@@ -2,7 +2,7 @@
 type: issue
 state: open
 created: 2026-07-14T08:32:46Z
-updated: 2026-11-18T21:02:37Z
+updated: 2026-11-23T17:19:42Z
 author: renovate[bot]
 author_url: https://github.com/renovate[bot]
 url: https://github.com/vig-os/commit-action/issues/42
@@ -13,7 +13,7 @@ milestone: none
 projects: none
 parent: none
 children: none
-synced: 2026-11-19T09:43:50.767Z
+synced: 2026-11-24T11:54:09.664Z
 ---
 
 # [Issue 42]: [Dependency Dashboard](https://github.com/vig-os/commit-action/issues/42)
@@ -134,7 +134,7 @@ The following updates have all been created. To force a retry/rebase of any, cli
  - `ts-jest ^29.1.1` → [Updates: `lock file @ 29.4.15`]
  - `tsx ^4.7.0`
  - `typescript ^5.3.2` → [Updates: `^7.0.0`]
- - `typescript-eslint ^8.64.0` → [Updates: `lock file @ 8.73.0`]
+ - `typescript-eslint ^8.64.0` → [Updates: `lock file @ 8.74.0`]
 
 </details>
 
