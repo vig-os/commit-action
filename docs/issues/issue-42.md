@@ -2,7 +2,7 @@
 type: issue
 state: open
 created: 2026-07-14T08:32:46Z
-updated: 2026-11-23T17:19:42Z
+updated: 2026-11-25T18:56:10Z
 author: renovate[bot]
 author_url: https://github.com/renovate[bot]
 url: https://github.com/vig-os/commit-action/issues/42
@@ -13,7 +13,7 @@ milestone: none
 projects: none
 parent: none
 children: none
-synced: 2026-11-24T11:54:09.664Z
+synced: 2026-11-26T10:18:06.513Z
 ---
 
 # [Issue 42]: [Dependency Dashboard](https://github.com/vig-os/commit-action/issues/42)
@@ -125,7 +125,7 @@ The following updates have all been created. To force a retry/rebase of any, cli
  - `@actions/github ^9.1.1`
  - `@eslint/js ^10.0.1`
  - `@types/jest ^30.0.0`
- - `@types/node ^24.0.0` → [Updates: `lock file @ 24.19.2`, `^26.0.0`]
+ - `@types/node ^24.0.0` → [Updates: `lock file @ 24.19.4`, `^26.0.0`]
  - `@vercel/ncc ^0.45.0`
  - `eslint ^10.7.0` → [Updates: `lock file @ 10.15.0`]
  - `globals ^17.7.0` → [Updates: `lock file @ 17.14.0`]
